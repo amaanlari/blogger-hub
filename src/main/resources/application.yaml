@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: blogger-hub
+
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: blogger_hub_db
+      username: blogger_hub_user
+      password: blogger_hub_pwd
+      authentication-database: admin
+
+  security:
+    user:
+      name: dummy
+      password: dummy
