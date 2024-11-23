@@ -4,9 +4,11 @@ import com.lari.bloggerhub.dto.request.BlogUserRequestDto;
 import com.lari.bloggerhub.dto.response.BlogUserResponseDto;
 import com.lari.bloggerhub.model.BlogUser;
 import com.lari.bloggerhub.repository.BlogUserRepository;
-import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,11 +21,11 @@ import java.util.List;
  * and managing user roles and permissions.
  */
 @Service
-public class BlogUserService {
+public class BlogUserService implements UserDetailsService {
 
   private final BlogUserRepository blogUserRepository;
 
-//  private final PasswordEncoder passwordEncoder;
+  //  private final PasswordEncoder passwordEncoder;
 
   /**
    * Constructs a new instance of the {@link BlogUserService} class with the specified dependencies.
@@ -31,7 +33,7 @@ public class BlogUserService {
    * @param blogUserRepository the repository class for managing user data
    */
   public BlogUserService(BlogUserRepository blogUserRepository) {
-//    this.passwordEncoder = passwordEncoder;
+    //    this.passwordEncoder = passwordEncoder;
     this.blogUserRepository = blogUserRepository;
   }
 
@@ -40,7 +42,7 @@ public class BlogUserService {
    *
    * @param userDto the user details to create
    */
-  public void createBlogUser(@Valid BlogUserRequestDto userDto) {
+  public void createBlogUser( BlogUserRequestDto userDto) {
     // Validate if username or email is unique
     if (blogUserRepository.existsByUsername(userDto.getUsername())) {
       throw new IllegalArgumentException("Username is already taken.");
@@ -88,5 +90,18 @@ public class BlogUserService {
     }
 
     return ResponseEntity.ok(responseDtoList);
+  }
+
+  public BlogUser findById(String id) {
+    return blogUserRepository
+        .findById(id)
+        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+  }
+
+  @Override
+  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    return blogUserRepository
+        .findByUsername(username)
+        .orElseThrow(() -> new UsernameNotFoundException("Username not found"));
   }
 }

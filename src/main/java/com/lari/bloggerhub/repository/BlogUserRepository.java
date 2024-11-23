@@ -3,6 +3,7 @@ package com.lari.bloggerhub.repository;
 import com.lari.bloggerhub.model.BlogUser;
 import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * This interface extends the {@link MongoRepository} interface provided by Spring Data MongoDB to
@@ -12,6 +13,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
  * address. The interface also provides methods to check if a user with a specific username or email
  * address already exists in the database.
  */
+@Repository
 public interface BlogUserRepository extends MongoRepository<BlogUser, String> {
 
   /**

@@ -1,5 +1,9 @@
 package com.lari.bloggerhub.dto.request;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 /**
  * This class represents the data transfer object (DTO) for creating a new user in the Blogger Hub
  * application.
@@ -9,10 +13,19 @@ package com.lari.bloggerhub.dto.request;
  */
 public class BlogUserRequestDto {
 
+  @NotBlank
+  @Size(min = 3, max = 20)
   private String username;
+  @NotBlank
+  @Size(max = 60)
+  @Email
   private String email;
+  @NotBlank
+  @Size(min = 6, max = 40)
   private String password;
+  @Size(max = 300)
   private String bio;
+  @NotBlank
   private String profilePicture;
 
   /** Default constructor. */
