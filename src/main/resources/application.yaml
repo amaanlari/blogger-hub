@@ -4,14 +4,11 @@ spring:
 
   data:
     mongodb:
-      host: localhost
-      port: 27017
-      database: blogger_hub_db
-      username: blogger_hub_user
-      password: blogger_hub_pwd
-      authentication-database: admin
+      uri: ${MONGODB_URI}
 
-  security:
-    user:
-      name: dummy
-      password: dummy
+jwt:
+  auth:
+    accessTokenSecret: ${ACCESS_TOKEN_SECRET}
+    refreshTokenSecret: ${REFRESH_TOKEN_SECRET}
+    refreshTokenExpirationDays: ${REFRESH_TOKEN_EXPIRATION_DAYS}
+    accessTokenExpirationMinutes: ${ACCESS_TOKEN_EXPIRATION_MINUTES}

@@ -1,9 +1,7 @@
 package com.lari.bloggerhub.config.security;
 
-import com.lari.bloggerhub.config.filter.AccessTokenEntryPoint;
-import com.lari.bloggerhub.config.filter.AccessTokenFilter;
-import com.lari.bloggerhub.service.BlogUserService;
-import com.lari.bloggerhub.util.jwt.JwtHelper;
+import com.lari.bloggerhub.config.security.filter.AccessTokenEntryPoint;
+import com.lari.bloggerhub.config.security.filter.AccessTokenFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,7 +9,6 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.CorsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -39,12 +36,9 @@ public class SecurityConfig {
     "/api/auth/**"
   };
 
-  private BlogUserService blogUserService;
-  private AccessTokenEntryPoint accessTokenEntryPoint;
+  private final AccessTokenEntryPoint accessTokenEntryPoint;
 
-  public SecurityConfig(
-      BlogUserService blogUserService, AccessTokenEntryPoint accessTokenEntryPoint) {
-    this.blogUserService = blogUserService;
+  public SecurityConfig(AccessTokenEntryPoint accessTokenEntryPoint) {
     this.accessTokenEntryPoint = accessTokenEntryPoint;
   }
 

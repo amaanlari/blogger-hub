@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 
@@ -20,35 +22,34 @@ public class JwtHelper {
   static final String JWT_ISSUER = "blogger-hub";
   private static final Logger log = LoggerFactory.getLogger(JwtHelper.class);
 
-  private final long accessTokenExpirationMs;
-  private final long refreshTokenExpirationMs;
+  private final long accessTokenExpirationMinutes;
+  private final long refreshTokenExpirationDays;
 
   private final Algorithm accessTokenAlgorithm;
   private final Algorithm refreshTokenAlgorithm;
   private final JWTVerifier accessTokenVerifier;
   private final JWTVerifier refreshTokenVerifier;
 
-  // Configure accessTokenSecret, refreshTokenSecret, refreshTokenExpirationDays and
-  // accessTokenExpirationMinutes in application.properties or application.yml
   public JwtHelper(
-      @Value("${accessTokenSecret}") String accessTokenSecret,
-      @Value("${refreshTokenSecret}") String refreshTokenSecret,
-      @Value("${refreshTokenExpirationDays}") int refreshTokenExpirationDays,
-      @Value("${accessTokenExpirationMinutes}") int accessTokenExpirationMinutes) {
-    accessTokenExpirationMs = (long) accessTokenExpirationMinutes * 60 * 1000;
-    refreshTokenExpirationMs = (long) refreshTokenExpirationDays * 24 * 60 * 60 * 1000;
-    accessTokenAlgorithm = Algorithm.HMAC512(accessTokenSecret);
-    refreshTokenAlgorithm = Algorithm.HMAC512(refreshTokenSecret);
-    accessTokenVerifier = JWT.require(accessTokenAlgorithm).withIssuer(JWT_ISSUER).build();
-    refreshTokenVerifier = JWT.require(refreshTokenAlgorithm).withIssuer(JWT_ISSUER).build();
+      @Value("${jwt.auth.accessTokenSecret}") String accessTokenSecret,
+      @Value("${jwt.auth.refreshTokenSecret}") String refreshTokenSecret,
+      @Value("${jwt.auth.refreshTokenExpirationDays}") int refreshTokenExpirationDays,
+      @Value("${jwt.auth.accessTokenExpirationMinutes}") int accessTokenExpirationMinutes) {
+    this.accessTokenExpirationMinutes = accessTokenExpirationMinutes;
+    this.refreshTokenExpirationDays = refreshTokenExpirationDays;
+    this.accessTokenAlgorithm = Algorithm.HMAC512(accessTokenSecret);
+    this.refreshTokenAlgorithm = Algorithm.HMAC512(refreshTokenSecret);
+    this.accessTokenVerifier = JWT.require(accessTokenAlgorithm).withIssuer(JWT_ISSUER).build();
+    this.refreshTokenVerifier = JWT.require(refreshTokenAlgorithm).withIssuer(JWT_ISSUER).build();
   }
 
   public String generateAccessToken(BlogUser user) {
     return JWT.create()
         .withIssuer(JWT_ISSUER)
         .withSubject(user.getId())
-        .withIssuedAt(new Date())
-        .withExpiresAt(new Date(new Date().getTime() + accessTokenExpirationMs))
+        .withIssuedAt(Date.from(Instant.now()))
+        .withExpiresAt(
+            Date.from(Instant.now().plus(accessTokenExpirationMinutes, ChronoUnit.MINUTES)))
         .sign(accessTokenAlgorithm);
   }
 
@@ -57,8 +58,8 @@ public class JwtHelper {
         .withIssuer(JWT_ISSUER)
         .withSubject(user.getId())
         .withClaim("tokenId", refreshToken.getId())
-        .withIssuedAt(new Date())
-        .withExpiresAt(new Date((new Date()).getTime() + refreshTokenExpirationMs))
+        .withIssuedAt(Date.from(Instant.now()))
+        .withExpiresAt(Date.from(Instant.now().plus(refreshTokenExpirationDays, ChronoUnit.DAYS)))
         .sign(refreshTokenAlgorithm);
   }
 
@@ -66,7 +67,7 @@ public class JwtHelper {
     try {
       return Optional.of(accessTokenVerifier.verify(token));
     } catch (JWTVerificationException e) {
-      log.error("invalid access token", e);
+      log.error("Invalid access token", e);
     }
     return Optional.empty();
   }
@@ -75,7 +76,7 @@ public class JwtHelper {
     try {
       return Optional.of(refreshTokenVerifier.verify(token));
     } catch (JWTVerificationException e) {
-      log.error("invalid refresh token", e);
+      log.error("Invalid refresh token", e);
     }
     return Optional.empty();
   }
