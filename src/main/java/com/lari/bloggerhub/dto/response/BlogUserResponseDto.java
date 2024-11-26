@@ -1,7 +1,6 @@
 package com.lari.bloggerhub.dto.response;
 
-import com.lari.bloggerhub.model.Role;
-
+import com.lari.bloggerhub.document.Role;
 import java.util.List;
 
 /**

@@ -1,6 +1,6 @@
 package com.lari.bloggerhub.repository;
 
-import com.lari.bloggerhub.model.BlogUser;
+import com.lari.bloggerhub.document.BlogUser;
 import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;

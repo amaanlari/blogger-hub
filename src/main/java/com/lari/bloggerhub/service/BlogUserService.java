@@ -2,8 +2,11 @@ package com.lari.bloggerhub.service;
 
 import com.lari.bloggerhub.dto.request.BlogUserRequestDto;
 import com.lari.bloggerhub.dto.response.BlogUserResponseDto;
-import com.lari.bloggerhub.model.BlogUser;
+import com.lari.bloggerhub.document.BlogUser;
 import com.lari.bloggerhub.repository.BlogUserRepository;
+import com.lari.bloggerhub.response.DataResponse;
+import com.lari.bloggerhub.response.Response;
+import com.lari.bloggerhub.response.SuccessResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,15 +28,12 @@ public class BlogUserService implements UserDetailsService {
 
   private final BlogUserRepository blogUserRepository;
 
-  //  private final PasswordEncoder passwordEncoder;
-
   /**
    * Constructs a new instance of the {@link BlogUserService} class with the specified dependencies.
    *
    * @param blogUserRepository the repository class for managing user data
    */
   public BlogUserService(BlogUserRepository blogUserRepository) {
-    //    this.passwordEncoder = passwordEncoder;
     this.blogUserRepository = blogUserRepository;
   }
 
@@ -42,7 +42,7 @@ public class BlogUserService implements UserDetailsService {
    *
    * @param userDto the user details to create
    */
-  public void createBlogUser( BlogUserRequestDto userDto) {
+  public void createBlogUser(BlogUserRequestDto userDto) {
     // Validate if username or email is unique
     if (blogUserRepository.existsByUsername(userDto.getUsername())) {
       throw new IllegalArgumentException("Username is already taken.");
@@ -71,7 +71,7 @@ public class BlogUserService implements UserDetailsService {
    *
    * @return a response entity containing the list of users
    */
-  public ResponseEntity<?> getBlogUsers() {
+  public ResponseEntity<Response> getBlogUsers() {
     // Fetch all users from the repository
     List<BlogUserResponseDto> responseDtoList =
         blogUserRepository.findAll().stream()
@@ -86,10 +86,11 @@ public class BlogUserService implements UserDetailsService {
                         user.getRoles()))
             .toList();
     if (responseDtoList.isEmpty()) {
-      return ResponseEntity.status(HttpStatus.NO_CONTENT).body("No users found.");
+      return ResponseEntity.status(HttpStatus.NO_CONTENT)
+          .body(new SuccessResponse(true, HttpStatus.NO_CONTENT.value(), "No users found."));
     }
 
-    return ResponseEntity.ok(responseDtoList);
+    return ResponseEntity.ok(new DataResponse(true, HttpStatus.OK.value(), "Records found.", responseDtoList));
   }
 
   public BlogUser findById(String id) {

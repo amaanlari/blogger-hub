@@ -1,4 +1,4 @@
-package com.lari.bloggerhub.model;
+package com.lari.bloggerhub.document;
 
 import java.time.Instant;
 import java.util.ArrayList;
