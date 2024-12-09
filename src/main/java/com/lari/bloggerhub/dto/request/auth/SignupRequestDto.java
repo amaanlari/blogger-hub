@@ -1,4 +1,4 @@
-package com.lari.bloggerhub.dto.request;
+package com.lari.bloggerhub.dto.request.auth;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Size;
  * <p>The class contains fields for the user's username, email address, password, bio, and profile
  * picture.
  */
-public class BlogUserRequestDto {
+public class SignupRequestDto {
 
   @NotBlank
   @Size(min = 3, max = 20)
@@ -32,7 +32,7 @@ public class BlogUserRequestDto {
   @NotBlank private String profilePicture;
 
   /** Default constructor. */
-  public BlogUserRequestDto() {}
+  public SignupRequestDto() {}
 
   /**
    * Initializes a new user request DTO with the specified details.
@@ -43,7 +43,7 @@ public class BlogUserRequestDto {
    * @param bio the biography of the user
    * @param profilePicture the URL of the user's profile picture
    */
-  public BlogUserRequestDto(
+  public SignupRequestDto(
       String username, String email, String password, String bio, String profilePicture) {
     this.username = username;
     this.email = email;

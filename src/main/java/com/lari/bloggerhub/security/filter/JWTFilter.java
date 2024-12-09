@@ -1,7 +1,7 @@
-package com.lari.bloggerhub.config.security.filter;
+package com.lari.bloggerhub.security.filter;
 
 import com.lari.bloggerhub.document.BlogUser;
-import com.lari.bloggerhub.service.BlogUserService;
+import com.lari.bloggerhub.service.bloguser.BlogUserService;
 import com.lari.bloggerhub.util.jwt.JwtHelper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -34,21 +34,21 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * Authorization
  */
 @Component
-public class AccessTokenFilter extends OncePerRequestFilter {
+public class JWTFilter extends OncePerRequestFilter {
 
-  private static final Logger log = LoggerFactory.getLogger(AccessTokenFilter.class);
+  private static final Logger log = LoggerFactory.getLogger(JWTFilter.class);
 
   private final JwtHelper jwtHelper;
   private final BlogUserService userService;
 
   /**
-   * Constructs a new instance of the {@link AccessTokenFilter} class with the specified
+   * Constructs a new instance of the {@link JWTFilter} class with the specified
    * dependencies.
    *
    * @param jwtHelper the helper class for parsing and validating JWT tokens
    * @param userService the service class for managing user-related operations
    */
-  public AccessTokenFilter(JwtHelper jwtHelper, BlogUserService userService) {
+  public JWTFilter(JwtHelper jwtHelper, BlogUserService userService) {
     this.jwtHelper = jwtHelper;
     this.userService = userService;
   }

@@ -1,6 +1,6 @@
-package com.lari.bloggerhub.service;
+package com.lari.bloggerhub.service.bloguser;
 
-import com.lari.bloggerhub.dto.request.BlogUserRequestDto;
+import com.lari.bloggerhub.dto.request.auth.SignupRequestDto;
 import com.lari.bloggerhub.dto.response.BlogUserResponseDto;
 import com.lari.bloggerhub.document.BlogUser;
 import com.lari.bloggerhub.repository.BlogUserRepository;
@@ -42,7 +42,7 @@ public class BlogUserService implements UserDetailsService {
    *
    * @param userDto the user details to create
    */
-  public void createBlogUser(BlogUserRequestDto userDto) {
+  public void createBlogUser(SignupRequestDto userDto) {
     // Validate if username or email is unique
     if (blogUserRepository.existsByUsername(userDto.getUsername())) {
       throw new IllegalArgumentException("Username is already taken.");

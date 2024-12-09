@@ -1,7 +1,7 @@
-package com.lari.bloggerhub.config.security;
+package com.lari.bloggerhub.config;
 
-import com.lari.bloggerhub.config.security.filter.AccessTokenEntryPoint;
-import com.lari.bloggerhub.config.security.filter.AccessTokenFilter;
+import com.lari.bloggerhub.security.AccessTokenEntryPoint;
+import com.lari.bloggerhub.security.filter.JWTFilter;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
@@ -83,13 +83,13 @@ public class SecurityConfig {
    * application.
    *
    * @param http the HTTP security configuration
-   * @param accessTokenFilter the filter for validating access tokens
+   * @param jwtFilter the filter for validating access tokens
    * @return the security filter chain for the application
    * @throws Exception if an error occurs while configuring the security filter chain
    */
   @Bean
   public SecurityFilterChain securityFilterChain(
-      HttpSecurity http, AccessTokenFilter accessTokenFilter) throws Exception {
+      HttpSecurity http, JWTFilter jwtFilter) throws Exception {
     http.cors(corsConfigurer -> corsConfigurer.configurationSource(corsConfigurationSource()))
         .csrf(CsrfConfigurer::disable)
         .exceptionHandling(
@@ -107,7 +107,7 @@ public class SecurityConfig {
                     .permitAll()
                     .anyRequest()
                     .authenticated())
-        .addFilterBefore(accessTokenFilter, UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }

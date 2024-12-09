@@ -1,25 +1,13 @@
 package com.lari.bloggerhub.controller.auth;
 
-import com.lari.bloggerhub.dto.request.BlogUserRequestDto;
+import com.lari.bloggerhub.dto.request.auth.RefreshTokenRequestDto;
+import com.lari.bloggerhub.dto.request.auth.SignupRequestDto;
 import com.lari.bloggerhub.dto.request.auth.LoginRequestDto;
-import com.lari.bloggerhub.dto.response.TokenResponseDto;
-import com.lari.bloggerhub.document.BlogUser;
-import com.lari.bloggerhub.document.RefreshToken;
-import com.lari.bloggerhub.repository.BlogUserRepository;
-import com.lari.bloggerhub.repository.RefreshTokenRepository;
+import com.lari.bloggerhub.dto.response.auth.TokenResponseDto;
 import com.lari.bloggerhub.response.Response;
-import com.lari.bloggerhub.response.SuccessResponse;
-import com.lari.bloggerhub.service.BlogUserService;
-import com.lari.bloggerhub.util.jwt.JwtHelper;
+import com.lari.bloggerhub.service.auth.AuthService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,36 +25,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
   public static final String INVALID_TOKEN = "Invalid token";
 
-  AuthenticationManager authenticationManager;
-  RefreshTokenRepository refreshTokenRepository;
-  BlogUserRepository blogUserRepository;
-  JwtHelper jwtHelper;
-  PasswordEncoder passwordEncoder;
-  BlogUserService blogUserService;
+  AuthService authService;
 
   /**
-   * Constructs a new instance of the {@link AuthController} class with the specified dependencies.
+   * Initializes a new authentication controller with the specified dependencies.
    *
-   * @param authenticationManager the authentication manager for validating user credentials
-   * @param refreshTokenRepository the repository for managing refresh tokens
-   * @param userRepository the repository for managing user data
-   * @param jwtHelper the helper class for generating and validating JWT tokens
-   * @param passwordEncoder the encoder for hashing user passwords
-   * @param userService the service class for managing user-related operations
+   * @param authService the authentication service to use for handling user authentication
    */
-  public AuthController(
-      AuthenticationManager authenticationManager,
-      RefreshTokenRepository refreshTokenRepository,
-      BlogUserRepository userRepository,
-      JwtHelper jwtHelper,
-      PasswordEncoder passwordEncoder,
-      BlogUserService userService) {
-    this.authenticationManager = authenticationManager;
-    this.refreshTokenRepository = refreshTokenRepository;
-    this.blogUserRepository = userRepository;
-    this.jwtHelper = jwtHelper;
-    this.passwordEncoder = passwordEncoder;
-    this.blogUserService = userService;
+  public AuthController(AuthService authService) {
+    this.authService = authService;
   }
 
   /**
@@ -78,20 +45,7 @@ public class AuthController {
    */
   @PostMapping("/login")
   public ResponseEntity<TokenResponseDto> login(@Valid @RequestBody LoginRequestDto dto) {
-    Authentication authentication =
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
-    SecurityContextHolder.getContext().setAuthentication(authentication);
-    BlogUser user = (BlogUser) authentication.getPrincipal();
-
-    RefreshToken refreshToken = new RefreshToken();
-    refreshToken.setOwner(user);
-    refreshTokenRepository.save(refreshToken);
-
-    String accessToken = jwtHelper.generateAccessToken(user);
-    String refreshTokenString = jwtHelper.generateRefreshToken(user, refreshToken);
-
-    return ResponseEntity.ok(new TokenResponseDto(user.getId(), accessToken, refreshTokenString));
+    return authService.login(dto);
   }
 
   /**
@@ -103,23 +57,8 @@ public class AuthController {
    * @return a response entity containing the user's ID, access token, and refresh token
    */
   @PostMapping("/signup")
-  public ResponseEntity<TokenResponseDto> signup(@RequestBody BlogUserRequestDto dto) {
-    BlogUser user = new BlogUser();
-    user.setUsername(dto.getUsername());
-    user.setEmail(dto.getEmail());
-    user.setPassword(passwordEncoder.encode(dto.getPassword()));
-    user.setBio(dto.getBio());
-    user.setProfilePicture(dto.getProfilePicture());
-    blogUserRepository.save(user);
-
-    RefreshToken refreshToken = new RefreshToken();
-    refreshToken.setOwner(user);
-    refreshTokenRepository.save(refreshToken);
-
-    String accessToken = jwtHelper.generateAccessToken(user);
-    String refreshTokenString = jwtHelper.generateRefreshToken(user, refreshToken);
-
-    return ResponseEntity.ok(new TokenResponseDto(user.getId(), accessToken, refreshTokenString));
+  public ResponseEntity<TokenResponseDto> signup(@RequestBody SignupRequestDto dto) {
+    return authService.signup(dto);
   }
 
   /**
@@ -129,17 +68,8 @@ public class AuthController {
    * @return a response entity indicating the outcome of the logout operation
    */
   @PostMapping("logout")
-  public ResponseEntity<Response> logout(@RequestBody TokenResponseDto dto) {
-    String refreshTokenString = dto.getRefreshToken();
-    if (jwtHelper.validateRefreshToken(refreshTokenString)
-        && refreshTokenRepository.existsById(
-            jwtHelper.getTokenIdFromRefreshToken(refreshTokenString))) {
-      // valid and exists in db
-      refreshTokenRepository.deleteById(jwtHelper.getTokenIdFromRefreshToken(refreshTokenString));
-      return ResponseEntity.ok(new SuccessResponse(true, HttpStatus.OK.value(), "Logged out"));
-    }
-
-    throw new BadCredentialsException(INVALID_TOKEN);
+  public ResponseEntity<Response> logout(@RequestBody RefreshTokenRequestDto dto) {
+    return authService.logout(dto);
   }
 
   /**
@@ -150,20 +80,8 @@ public class AuthController {
    * @return a response entity indicating the outcome of the logout operation
    */
   @PostMapping("logout-all")
-  public ResponseEntity<Response> logoutAll(@RequestBody TokenResponseDto dto) {
-    String refreshTokenString = dto.getRefreshToken();
-    if (jwtHelper.validateRefreshToken(refreshTokenString)
-        && refreshTokenRepository.existsById(
-            jwtHelper.getTokenIdFromRefreshToken(refreshTokenString))) {
-      // valid and exists in db
-
-      refreshTokenRepository.deleteByOwner_Id(
-          jwtHelper.getUserIdFromRefreshToken(refreshTokenString));
-      return ResponseEntity.ok(
-          new SuccessResponse(true, HttpStatus.OK.value(), "Logged out from all"));
-    }
-
-    throw new BadCredentialsException(INVALID_TOKEN);
+  public ResponseEntity<Response> logoutAll(@RequestBody RefreshTokenRequestDto dto) {
+    return authService.logoutAll(dto);
   }
 
   /**
@@ -174,21 +92,8 @@ public class AuthController {
    * @return a response entity containing the user's ID, access token, and refresh token
    */
   @PostMapping("access-token")
-  public ResponseEntity<TokenResponseDto> accessToken(@RequestBody TokenResponseDto dto) {
-    String refreshTokenString = dto.getRefreshToken();
-    if (jwtHelper.validateRefreshToken(refreshTokenString)
-        && refreshTokenRepository.existsById(
-            jwtHelper.getTokenIdFromRefreshToken(refreshTokenString))) {
-      // valid and exists in db
-
-      BlogUser user =
-          blogUserService.findById(jwtHelper.getUserIdFromRefreshToken(refreshTokenString));
-      String accessToken = jwtHelper.generateAccessToken(user);
-
-      return ResponseEntity.ok(new TokenResponseDto(user.getId(), accessToken, refreshTokenString));
-    }
-
-    throw new BadCredentialsException(INVALID_TOKEN);
+  public ResponseEntity<TokenResponseDto> accessToken(@RequestBody RefreshTokenRequestDto dto) {
+    return authService.accessToken(dto);
   }
 
   /**
@@ -199,29 +104,7 @@ public class AuthController {
    * @return a response entity containing the user's ID, access token, and refresh token
    */
   @PostMapping("refresh-token")
-  public ResponseEntity<TokenResponseDto> refreshToken(@RequestBody TokenResponseDto dto) {
-    String refreshTokenString = dto.getRefreshToken();
-    if (jwtHelper.validateRefreshToken(refreshTokenString)
-        && refreshTokenRepository.existsById(
-            jwtHelper.getTokenIdFromRefreshToken(refreshTokenString))) {
-      // valid and exists in db
-
-      refreshTokenRepository.deleteById(jwtHelper.getTokenIdFromRefreshToken(refreshTokenString));
-
-      BlogUser user =
-          blogUserService.findById(jwtHelper.getUserIdFromRefreshToken(refreshTokenString));
-
-      RefreshToken refreshToken = new RefreshToken();
-      refreshToken.setOwner(user);
-      refreshTokenRepository.save(refreshToken);
-
-      String accessToken = jwtHelper.generateAccessToken(user);
-      String newRefreshTokenString = jwtHelper.generateRefreshToken(user, refreshToken);
-
-      return ResponseEntity.ok(
-          new TokenResponseDto(user.getId(), accessToken, newRefreshTokenString));
-    }
-
-    throw new BadCredentialsException(INVALID_TOKEN);
+  public ResponseEntity<TokenResponseDto> refreshToken(@RequestBody RefreshTokenRequestDto dto) {
+    return authService.refreshToken(dto);
   }
 }

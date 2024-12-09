@@ -1,4 +1,4 @@
-package com.lari.bloggerhub.dto.response;
+package com.lari.bloggerhub.dto.response.auth;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
 

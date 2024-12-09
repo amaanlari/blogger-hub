@@ -1,8 +1,6 @@
-package com.lari.bloggerhub.controller;
+package com.lari.bloggerhub.controller.bloguser;
 
-import com.lari.bloggerhub.dto.request.BlogUserRequestDto;
-import com.lari.bloggerhub.service.BlogUserService;
-import org.springframework.http.HttpStatus;
+import com.lari.bloggerhub.service.bloguser.BlogUserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,19 +26,6 @@ public class BlogUserController {
    */
   public BlogUserController(BlogUserService blogUserService) {
     this.blogUserService = blogUserService;
-  }
-
-  /**
-   * Registers a new user in the Blogger Hub application with the specified user details.
-   *
-   * @param userDto the user details to register
-   * @return a response entity indicating the outcome of the registration process
-   */
-  @PostMapping("/sign-up")
-  public ResponseEntity<String> registerUser(@RequestBody BlogUserRequestDto userDto) {
-    blogUserService.createBlogUser(userDto);
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body("User registered successfully. Please verify your email.");
   }
 
   @GetMapping("/health")

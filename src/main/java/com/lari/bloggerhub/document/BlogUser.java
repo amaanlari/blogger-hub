@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import com.lari.bloggerhub.enums.AccountStatus;
+import com.lari.bloggerhub.enums.Role;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -40,6 +43,7 @@ public class BlogUser implements UserDetails {
   private String profilePicture;
   private boolean isVerified;
   private List<Role> roles;
+  private AccountStatus status;
 
   @CreatedDate private Instant createdAt;
   @LastModifiedDate private Instant updatedAt;
@@ -48,6 +52,7 @@ public class BlogUser implements UserDetails {
   public BlogUser() {
     roles = new ArrayList<>();
     roles.add(Role.FREE_USER);
+    status = AccountStatus.ACTIVE;
   }
 
   public String getId() {
@@ -112,6 +117,14 @@ public class BlogUser implements UserDetails {
 
   public void setRoles(List<Role> roles) {
     this.roles = roles;
+  }
+
+  public AccountStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(AccountStatus status) {
+    this.status = status;
   }
 
   public Instant getCreatedAt() {

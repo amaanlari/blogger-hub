@@ -1,4 +1,4 @@
-package com.lari.bloggerhub.config.security.filter;
+package com.lari.bloggerhub.security;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
