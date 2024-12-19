@@ -21,6 +21,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -91,13 +92,12 @@ public class AuthService {
         throw new BadCredentialsException("Email already exists");
       }
 
-      BlogUser user = new BlogUser();
-      user.setUsername(dto.getUsername());
-      user.setEmail(dto.getEmail());
-      user.setPassword(passwordEncoder.encode(dto.getPassword()));
-      user.setBio(dto.getBio());
-      user.setProfilePicture(dto.getProfilePicture());
-      blogUserRepository.save(user);
+      blogUserService.createBlogUser(dto);
+
+      BlogUser user =
+          blogUserRepository
+              .findByUsername(dto.getUsername())
+              .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
       RefreshToken refreshToken = new RefreshToken();
       refreshToken.setOwner(user);
