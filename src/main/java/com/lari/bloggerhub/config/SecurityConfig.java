@@ -39,7 +39,8 @@ public class SecurityConfig {
     "/v2/api-docs",
     "/webjars/**",
     "/swagger-ui/**",
-    "/api/auth/**"
+    "/api/auth/**",
+    "/api/users/{username}"
   };
 
   private final AccessTokenEntryPoint accessTokenEntryPoint;
@@ -88,8 +89,8 @@ public class SecurityConfig {
    * @throws Exception if an error occurs while configuring the security filter chain
    */
   @Bean
-  public SecurityFilterChain securityFilterChain(
-      HttpSecurity http, JWTFilter jwtFilter) throws Exception {
+  public SecurityFilterChain securityFilterChain(HttpSecurity http, JWTFilter jwtFilter)
+      throws Exception {
     http.cors(corsConfigurer -> corsConfigurer.configurationSource(corsConfigurationSource()))
         .csrf(CsrfConfigurer::disable)
         .exceptionHandling(

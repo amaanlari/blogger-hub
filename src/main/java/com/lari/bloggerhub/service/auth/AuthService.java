@@ -92,6 +92,8 @@ public class AuthService {
         throw new BadCredentialsException("Email already exists");
       }
 
+      dto.setPassword(passwordEncoder.encode(dto.getPassword()));
+
       blogUserService.createBlogUser(dto);
 
       BlogUser user =

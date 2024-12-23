@@ -5,7 +5,7 @@ public class ErrorResponse implements Response {
   private boolean success;
   private int statusCode;
   private String message;
-  private String error;
+  private Object error;
 
   /**
    * Initializes a new error response with the specified data.
@@ -15,7 +15,7 @@ public class ErrorResponse implements Response {
    * @param message the message associated with the response
    * @param error the error message associated with the response
    */
-  public ErrorResponse(boolean success, int statusCode, String message, String error) {
+  public ErrorResponse(boolean success, int statusCode, String message, Object error) {
     this.success = success;
     this.statusCode = statusCode;
     this.message = message;
@@ -48,11 +48,11 @@ public class ErrorResponse implements Response {
     this.message = message;
   }
 
-  public String getError() {
+  public Object getError() {
     return error;
   }
 
-  public void setError(String error) {
+  public void setError(Object error) {
     this.error = error;
   }
 }

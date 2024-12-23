@@ -29,7 +29,6 @@ public class SignupRequestDto {
   @Size(max = 300)
   private String bio;
 
-  @NotBlank private String profilePicture;
 
   /** Default constructor. */
   public SignupRequestDto() {}
@@ -41,15 +40,13 @@ public class SignupRequestDto {
    * @param email the email address of the user
    * @param password the password of the user
    * @param bio the biography of the user
-   * @param profilePicture the URL of the user's profile picture
    */
   public SignupRequestDto(
-      String username, String email, String password, String bio, String profilePicture) {
+      String username, String email, String password, String bio) {
     this.username = username;
     this.email = email;
     this.password = password;
     this.bio = bio;
-    this.profilePicture = profilePicture;
   }
 
   public String getUsername() {
@@ -82,13 +79,5 @@ public class SignupRequestDto {
 
   public void setBio(String bio) {
     this.bio = bio;
-  }
-
-  public String getProfilePicture() {
-    return profilePicture;
-  }
-
-  public void setProfilePicture(String profilePicture) {
-    this.profilePicture = profilePicture;
   }
 }
