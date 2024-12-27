@@ -2,15 +2,18 @@ package com.lari.bloggerhub.service.bloguser;
 
 import com.cloudinary.Cloudinary;
 import com.lari.bloggerhub.constant.Constant;
+import com.lari.bloggerhub.document.BlogUser;
 import com.lari.bloggerhub.dto.request.UpdateBlogUserRequestDto;
 import com.lari.bloggerhub.dto.request.auth.SignupRequestDto;
 import com.lari.bloggerhub.dto.response.BlogUserResponseDto;
-import com.lari.bloggerhub.document.BlogUser;
 import com.lari.bloggerhub.repository.BlogUserRepository;
 import com.lari.bloggerhub.response.DataResponse;
 import com.lari.bloggerhub.response.ErrorResponse;
 import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.response.SuccessResponse;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -22,10 +25,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 /**
  * This class provides service methods for managing user-related operations in the Blogger Hub
@@ -47,7 +46,10 @@ public class BlogUserService implements UserDetailsService {
    *
    * @param blogUserRepository the repository class for managing user data
    */
-  public BlogUserService(BlogUserRepository blogUserRepository, Cloudinary cloudinary, PasswordEncoder passwordEncoder) {
+  public BlogUserService(
+      BlogUserRepository blogUserRepository,
+      Cloudinary cloudinary,
+      PasswordEncoder passwordEncoder) {
     this.blogUserRepository = blogUserRepository;
     this.cloudinary = cloudinary;
     this.passwordEncoder = passwordEncoder;
@@ -278,6 +280,7 @@ public class BlogUserService implements UserDetailsService {
 
   // Helper methods for fetching user details
 
+  @SuppressWarnings("checkstyle:MissingJavadocMethod")
   public BlogUser findById(String id) {
     return blogUserRepository
         .findById(id)

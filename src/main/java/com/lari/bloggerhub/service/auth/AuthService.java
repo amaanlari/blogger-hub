@@ -26,6 +26,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * This class provides methods for handling user authentication and authorization in the Blogger Hub
+ * application. It allows users to log in, sign up, and generate access tokens and refresh tokens.
+ */
 @Service
 public class AuthService {
 
@@ -39,6 +43,16 @@ public class AuthService {
   PasswordEncoder passwordEncoder;
   BlogUserService blogUserService;
 
+  /**
+   * Constructs a new instance of the {@link AuthService} class with the specified dependencies.
+   *
+   * @param authenticationManager the authentication manager for validating user credentials
+   * @param refreshTokenRepository the repository for managing refresh tokens
+   * @param blogUserRepository the repository for managing user accounts
+   * @param jwtHelper the helper class for generating and validating JWT tokens
+   * @param passwordEncoder the password encoder for hashing user passwords
+   * @param blogUserService the service class for managing user-related operations
+   */
   public AuthService(
       AuthenticationManager authenticationManager,
       RefreshTokenRepository refreshTokenRepository,
@@ -54,6 +68,12 @@ public class AuthService {
     this.blogUserService = blogUserService;
   }
 
+  /**
+   * This method is used to log in a user to the Blogger Hub application.
+   *
+   * @param dto the login request data
+   * @return a {@link ResponseEntity} containing the response data
+   */
   public ResponseEntity<TokenResponseDto> login(LoginRequestDto dto) {
     log.info("Login attempt for user: {}", dto.getUsername());
     try {
@@ -78,6 +98,12 @@ public class AuthService {
     }
   }
 
+  /**
+   * This method is used to sign up a new user in the Blogger Hub application.
+   *
+   * @param dto the signup request data
+   * @return a {@link ResponseEntity} containing the response data
+   */
   @Transactional
   public ResponseEntity<TokenResponseDto> signup(SignupRequestDto dto) {
     log.info("Signup attempt for user: {}", dto.getUsername());
@@ -115,9 +141,15 @@ public class AuthService {
     }
   }
 
+  /**
+   * This method is used to log out a user from the Blogger Hub application.
+   *
+   * @param dto the refresh token request data
+   * @return a {@link ResponseEntity} containing the response data
+   */
   public ResponseEntity<Response> logout(RefreshTokenRequestDto dto) {
-    log.info(
-        "Logout attempt for user: {}", jwtHelper.getTokenIdFromRefreshToken(dto.getRefreshToken()));
+    String userId = jwtHelper.getUserIdFromRefreshToken(dto.getRefreshToken());
+    log.info("Logout attempt for user: {}", userId);
     try {
       String refreshTokenString = dto.getRefreshToken();
       if (jwtHelper.validateRefreshToken(refreshTokenString)
@@ -134,6 +166,12 @@ public class AuthService {
     }
   }
 
+  /**
+   * This method is used to log out a user from all devices in the Blogger Hub application.
+   *
+   * @param dto the refresh token request data
+   * @return a {@link ResponseEntity} containing the response data
+   */
   public ResponseEntity<Response> logoutAll(RefreshTokenRequestDto dto) {
     log.info("Logout all attempt");
     try {
@@ -157,6 +195,12 @@ public class AuthService {
     }
   }
 
+  /**
+   * This method is used to generate an access token for a user in the Blogger Hub application.
+   *
+   * @param dto the refresh token request data
+   * @return a {@link ResponseEntity} containing the response data
+   */
   public ResponseEntity<TokenResponseDto> accessToken(RefreshTokenRequestDto dto) {
     log.info("Access token generation attempt");
     try {
@@ -182,6 +226,12 @@ public class AuthService {
     }
   }
 
+  /**
+   * This method is used to generate a refresh token for a user in the Blogger Hub application.
+   *
+   * @param dto the refresh token request data
+   * @return a {@link ResponseEntity} containing the response data
+   */
   public ResponseEntity<TokenResponseDto> refreshToken(RefreshTokenRequestDto dto) {
     log.info("Refresh token generation attempt");
     try {

@@ -1,5 +1,6 @@
 package com.lari.bloggerhub.controller.bloguser;
 
+import com.lari.bloggerhub.constant.Constant;
 import com.lari.bloggerhub.document.BlogUser;
 import com.lari.bloggerhub.dto.request.UpdateBlogUserRequestDto;
 import com.lari.bloggerhub.response.ErrorResponse;
@@ -12,7 +13,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -40,11 +48,23 @@ public class BlogUserController {
     this.blogUserService = blogUserService;
   }
 
+  /**
+   * This method is used to check the health of the service.
+   *
+   * @return a {@link ResponseEntity} containing the response data
+   */
   @GetMapping("/health")
   public ResponseEntity<String> healthCheck() {
     return ResponseEntity.ok("Service is up and running");
   }
 
+  /**
+   * This method is used to get a user by their ID.
+   *
+   * @param userId the ID of the user to retrieve
+   * @param authentication the authentication object for the current user
+   * @return a {@link ResponseEntity} containing the response data
+   */
   @PreAuthorize("hasRole('FREE_USER')")
   @GetMapping("/id/{userId}")
   public ResponseEntity<Response> getUserById(
@@ -58,12 +78,18 @@ public class BlogUserController {
               new ErrorResponse(
                   false,
                   HttpStatus.UNAUTHORIZED.value(),
-                  "You are not authorized to view this user's profile",
-                  "Logged in user's id does not match the requested user's id"));
+                  Constant.NOT_AUTHORIZED_TO_VIEW_PROFILE,
+                  Constant.LOGGED_IN_USER_ID_DOES_NOT_MATCH_REQUESTED_USER_ID));
     }
     return blogUserService.getUserById(userId);
   }
 
+  /**
+   * This method is used to get a user by their username.
+   *
+   * @param username the username of the user to retrieve
+   * @return a {@link ResponseEntity} containing the response data
+   */
   @GetMapping("/{username}")
   public ResponseEntity<Response> getUserByUsername(@PathVariable String username) {
     return blogUserService.getUserByUsername(username);
@@ -75,6 +101,14 @@ public class BlogUserController {
     return blogUserService.getAllUsers();
   }
 
+  /**
+   * This method is used to update a user's profile information.
+   *
+   * @param userId the ID of the user to update
+   * @param updateUserRequestDto the request data containing the updated user information
+   * @param authentication the authentication object for the current user
+   * @return a {@link ResponseEntity} containing the response data
+   */
   @PreAuthorize("hasRole('FREE_USER')")
   @PutMapping("/{userId}")
   public ResponseEntity<Response> updateUser(
@@ -88,12 +122,21 @@ public class BlogUserController {
               new ErrorResponse(
                   false,
                   HttpStatus.UNAUTHORIZED.value(),
-                  "You are not authorized to view this user's profile",
-                  "Logged in user's id does not match the requested user's id"));
+                  Constant.NOT_AUTHORIZED_TO_VIEW_PROFILE,
+                  Constant.LOGGED_IN_USER_ID_DOES_NOT_MATCH_REQUESTED_USER_ID));
     }
     return blogUserService.updateUser(userId, updateUserRequestDto);
   }
 
+  /**
+   * This method is used to upload a profile picture for a user.
+   *
+   * @param userId the ID of the user to update
+   * @param profilePicture the profile picture file to upload
+   * @param authentication the authentication object for the current user
+   * @return a {@link ResponseEntity} containing the response data
+   * @throws IOException if an error occurs while processing the file
+   */
   @PreAuthorize("hasRole('FREE_USER')")
   @PostMapping("/{userId}/upload-profile-picture")
   public ResponseEntity<Response> uploadProfilePicture(
@@ -108,12 +151,19 @@ public class BlogUserController {
               new ErrorResponse(
                   false,
                   HttpStatus.UNAUTHORIZED.value(),
-                  "You are not authorized to view this user's profile",
-                  "Logged in user's id does not match the requested user's id"));
+                  Constant.NOT_AUTHORIZED_TO_VIEW_PROFILE,
+                  Constant.LOGGED_IN_USER_ID_DOES_NOT_MATCH_REQUESTED_USER_ID));
     }
     return blogUserService.uploadProfilePicture(userId, profilePicture);
   }
 
+  /**
+   * This method is used to remove a profile picture for a user.
+   *
+   * @param userId the ID of the user to update
+   * @param authentication the authentication object for the current user
+   * @return a {@link ResponseEntity} containing the response data
+   */
   @PreAuthorize("hasRole('FREE_USER')")
   @PostMapping("/{userId}/remove-profile-picture")
   public ResponseEntity<Response> removeProfilePicture(
@@ -125,8 +175,8 @@ public class BlogUserController {
               new ErrorResponse(
                   false,
                   HttpStatus.UNAUTHORIZED.value(),
-                  "You are not authorized to view this user's profile",
-                  "Logged in user's id does not match the requested user's id"));
+                  Constant.NOT_AUTHORIZED_TO_VIEW_PROFILE,
+                  Constant.LOGGED_IN_USER_ID_DOES_NOT_MATCH_REQUESTED_USER_ID));
     }
     return blogUserService.removeProfilePicture(userId);
   }

@@ -1,10 +1,9 @@
 package com.lari.bloggerhub.repository;
 
 import com.lari.bloggerhub.document.RefreshToken;
+import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
 
 /**
  * This interface extends the {@link MongoRepository} interface provided by Spring Data MongoDB to

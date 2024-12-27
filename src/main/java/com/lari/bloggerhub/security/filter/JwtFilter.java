@@ -34,21 +34,20 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * Authorization
  */
 @Component
-public class JWTFilter extends OncePerRequestFilter {
+public class JwtFilter extends OncePerRequestFilter {
 
-  private static final Logger log = LoggerFactory.getLogger(JWTFilter.class);
+  private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
 
   private final JwtHelper jwtHelper;
   private final BlogUserService userService;
 
   /**
-   * Constructs a new instance of the {@link JWTFilter} class with the specified
-   * dependencies.
+   * Constructs a new instance of the {@link JwtFilter} class with the specified dependencies.
    *
    * @param jwtHelper the helper class for parsing and validating JWT tokens
    * @param userService the service class for managing user-related operations
    */
-  public JWTFilter(JwtHelper jwtHelper, BlogUserService userService) {
+  public JwtFilter(JwtHelper jwtHelper, BlogUserService userService) {
     this.jwtHelper = jwtHelper;
     this.userService = userService;
   }

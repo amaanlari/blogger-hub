@@ -1,5 +1,6 @@
 package com.lari.bloggerhub.dto.request.auth;
 
+@SuppressWarnings("checkstyle:MissingJavadocType")
 public class RefreshTokenRequestDto {
   private String refreshToken;
 

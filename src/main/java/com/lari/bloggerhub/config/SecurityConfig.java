@@ -1,7 +1,7 @@
 package com.lari.bloggerhub.config;
 
 import com.lari.bloggerhub.security.AccessTokenEntryPoint;
-import com.lari.bloggerhub.security.filter.JWTFilter;
+import com.lari.bloggerhub.security.filter.JwtFilter;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
@@ -89,7 +89,7 @@ public class SecurityConfig {
    * @throws Exception if an error occurs while configuring the security filter chain
    */
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http, JWTFilter jwtFilter)
+  public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtFilter)
       throws Exception {
     http.cors(corsConfigurer -> corsConfigurer.configurationSource(corsConfigurationSource()))
         .csrf(CsrfConfigurer::disable)

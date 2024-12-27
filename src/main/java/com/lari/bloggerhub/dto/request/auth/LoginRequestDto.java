@@ -2,6 +2,7 @@ package com.lari.bloggerhub.dto.request.auth;
 
 import jakarta.validation.constraints.NotBlank;
 
+@SuppressWarnings("checkstyle:MissingJavadocType")
 public class LoginRequestDto {
   @NotBlank private String username;
   @NotBlank private String password;

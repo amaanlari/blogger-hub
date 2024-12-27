@@ -1,12 +1,11 @@
 package com.lari.bloggerhub.document;
 
+import com.lari.bloggerhub.enums.AccountStatus;
+import com.lari.bloggerhub.enums.Role;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import com.lari.bloggerhub.enums.AccountStatus;
-import com.lari.bloggerhub.enums.Role;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
