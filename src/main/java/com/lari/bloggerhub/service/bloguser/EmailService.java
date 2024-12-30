@@ -1,13 +1,15 @@
 package com.lari.bloggerhub.service.bloguser;
 
+import com.lari.bloggerhub.constant.Constant;
 import com.lari.bloggerhub.document.BlogUser;
 import com.lari.bloggerhub.repository.BlogUserRepository;
 import com.lari.bloggerhub.service.RedisService;
+import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -44,12 +46,18 @@ public class EmailService {
     redisService.set(email, otp, otpTtl);
 
     try {
-      SimpleMailMessage mailMessage = new SimpleMailMessage();
-      mailMessage.setTo(email);
-      mailMessage.setSubject("OTP for Blogger Hub account verification");
-      mailMessage.setText("Your OTP is: " + otp);
+      String sender = Constant.MAIL_SENDER;
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true);
+      helper.setFrom(sender);
+      helper.setTo(email);
+      helper.setSubject("OTP for Blogger Hub account verification");
 
-      mailSender.send(mailMessage);
+      // Create the HTML content
+      String htmlContent = Constant.EMAIL_CONTENT_OTP.formatted(otp);
+
+      helper.setText(htmlContent, true);
+      mailSender.send(message);
     } catch (Exception e) {
       log.error("Failed to send OTP to {}", email, e);
     }

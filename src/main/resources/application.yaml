@@ -32,6 +32,7 @@ jwt:
 cloudinary:
   cloud:
     name: ${CLOUDINARY_CLOUD_NAME}
+    default-profile-pic: ${CLOUDINARY_DEFAULT_PROFILE_PIC}
   api:
     key: ${CLOUDINARY_API_KEY}
     secret: ${CLOUDINARY_API_SECRET}
