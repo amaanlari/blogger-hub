@@ -12,10 +12,12 @@ import com.lari.bloggerhub.response.ErrorResponse;
 import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.response.SuccessResponse;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,6 +42,7 @@ public class BlogUserService implements UserDetailsService {
   private final BlogUserRepository blogUserRepository;
   private final Cloudinary cloudinary;
   private final PasswordEncoder passwordEncoder;
+  private final EmailService emailService;
 
   /**
    * Constructs a new instance of the {@link BlogUserService} class with the specified dependencies.
@@ -49,10 +52,12 @@ public class BlogUserService implements UserDetailsService {
   public BlogUserService(
       BlogUserRepository blogUserRepository,
       Cloudinary cloudinary,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder,
+      EmailService emailService) {
     this.blogUserRepository = blogUserRepository;
     this.cloudinary = cloudinary;
     this.passwordEncoder = passwordEncoder;
+    this.emailService = emailService;
   }
 
   /**
@@ -71,19 +76,11 @@ public class BlogUserService implements UserDetailsService {
       throw new IllegalArgumentException("Email is already registered.");
     }
 
-    // Convert DTO to Entity
     BlogUser blogUser = new BlogUser();
-    blogUser.setUsername(userDto.getUsername());
-    blogUser.setEmail(userDto.getEmail());
-    blogUser.setPassword(userDto.getPassword());
-    blogUser.setBio(userDto.getBio());
-    blogUser.setProfilePicture(Constant.DEFAULT_PROFILE_IMAGE_URL);
+    BeanUtils.copyProperties(userDto, blogUser);
 
-    // Save user
+    emailService.sendVerificationEmail(blogUser.getEmail());
     blogUserRepository.save(blogUser);
-
-    // Send verification email (optional)
-    // emailService.sendVerificationEmail(blogUser.getEmail())
   }
 
   /**
@@ -179,7 +176,34 @@ public class BlogUserService implements UserDetailsService {
         new SuccessResponse(true, HttpStatus.OK.value(), "User updated successfully."));
   }
 
-  // Update email with OTP verification
+  @Transactional
+  public ResponseEntity<Response> updateUser(String userId, Map<String, Object> updates) {
+    BlogUser user = findById(userId);
+    updates.forEach(
+        (fieldName, fieldValue) -> {
+          try {
+            Field field = BlogUser.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(user, fieldValue);
+          } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+          }
+        });
+    blogUserRepository.save(user);
+    return ResponseEntity.ok(
+        new SuccessResponse(true, HttpStatus.OK.value(), "User updated successfully."));
+  }
+
+  @Transactional
+  public ResponseEntity<Response> updateEmail(String userId, String newEmail, String otp) {
+    BlogUser currentUser = this.findById(userId);
+    if (emailService.verifyEmail(currentUser, newEmail, otp)) {
+      return ResponseEntity.ok(
+          new SuccessResponse(true, HttpStatus.OK.value(), "Email updated successfully."));
+    }
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(new ErrorResponse(false, HttpStatus.BAD_REQUEST.value(), "Invalid OTP.", ""));
+  }
 
   /**
    * Adds a profile picture to the user's account. The profile picture is uploaded to the Cloudinary
@@ -190,6 +214,7 @@ public class BlogUserService implements UserDetailsService {
    * @return a response entity indicating the success or failure of the operation
    * @throws IOException if an error occurs while uploading the profile picture
    */
+  @Transactional
   public ResponseEntity<Response> uploadProfilePicture(String userId, MultipartFile profilePicture)
       throws IOException {
     String cloudinaryProfilePicDirPath = String.format("blogger_hub/%s/profile_pic", userId);
@@ -240,6 +265,7 @@ public class BlogUserService implements UserDetailsService {
    * @param userId the unique identifier of the user
    * @return a response entity indicating the success or failure of the operation
    */
+  @Transactional
   public ResponseEntity<Response> removeProfilePicture(String userId) {
     BlogUser currentUser = this.findById(userId);
     String profilePicUrl = currentUser.getProfilePicture();
@@ -255,6 +281,7 @@ public class BlogUserService implements UserDetailsService {
     try {
       if (!profilePicUrl.startsWith("http")) {
         currentUser.setProfilePicture(Constant.DEFAULT_PROFILE_IMAGE_URL);
+        blogUserRepository.save(currentUser);
         return ResponseEntity.ok(
             new SuccessResponse(
                 true,
@@ -274,6 +301,7 @@ public class BlogUserService implements UserDetailsService {
                   "Failed to remove profile picture.",
                   e.getMessage()));
     }
+    blogUserRepository.save(currentUser);
     return ResponseEntity.ok(
         new SuccessResponse(true, HttpStatus.OK.value(), "Profile picture removed successfully."));
   }

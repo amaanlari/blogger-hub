@@ -1,9 +1,9 @@
 package com.lari.bloggerhub.document;
 
+import com.lari.bloggerhub.constant.Constant;
 import com.lari.bloggerhub.enums.AccountStatus;
 import com.lari.bloggerhub.enums.Role;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.annotation.CreatedDate;
@@ -47,10 +47,10 @@ public class BlogUser implements UserDetails {
   @CreatedDate private Instant createdAt;
   @LastModifiedDate private Instant updatedAt;
 
-  /** Default constructor initializing the user with a FREE_USER role. */
+  /** Default constructor initializing the user with default values. */
   public BlogUser() {
-    roles = new ArrayList<>();
-    roles.add(Role.FREE_USER);
+    profilePicture = Constant.DEFAULT_PROFILE_IMAGE_URL;
+    roles = List.of(Role.FREE_USER);
     status = AccountStatus.ACTIVE;
   }
 

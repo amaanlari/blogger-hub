@@ -3,6 +3,7 @@ package com.lari.bloggerhub.controller.auth;
 import com.lari.bloggerhub.dto.request.auth.LoginRequestDto;
 import com.lari.bloggerhub.dto.request.auth.RefreshTokenRequestDto;
 import com.lari.bloggerhub.dto.request.auth.SignupRequestDto;
+import com.lari.bloggerhub.dto.request.auth.UserOtpRequestDto;
 import com.lari.bloggerhub.dto.response.auth.TokenResponseDto;
 import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.service.auth.AuthService;
@@ -23,7 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-  public static final String INVALID_TOKEN = "Invalid token";
 
   AuthService authService;
 
@@ -37,18 +37,6 @@ public class AuthController {
   }
 
   /**
-   * Logs in a user with the specified username and password. If the credentials are valid, the
-   * method generates an access token and a refresh token for the user.
-   *
-   * @param dto the login request containing the user's credentials
-   * @return a response entity containing the user's ID, access token, and refresh token
-   */
-  @PostMapping("/login")
-  public ResponseEntity<TokenResponseDto> login(@Valid @RequestBody LoginRequestDto dto) {
-    return authService.login(dto);
-  }
-
-  /**
    * Registers a new user in the Blogger Hub application with the specified user details. If the
    * registration is successful, the method generates an access token and a refresh token for the
    * user.
@@ -57,8 +45,20 @@ public class AuthController {
    * @return a response entity containing the user's ID, access token, and refresh token
    */
   @PostMapping("/signup")
-  public ResponseEntity<TokenResponseDto> signup(@RequestBody SignupRequestDto dto) {
+  public ResponseEntity<Response> signup(@RequestBody SignupRequestDto dto) {
     return authService.signup(dto);
+  }
+
+  /**
+   * Logs in a user with the specified username and password. If the credentials are valid, the
+   * method generates an access token and a refresh token for the user.
+   *
+   * @param dto the login request containing the user's credentials
+   * @return a response entity containing the user's ID, access token, and refresh token
+   */
+  @PostMapping("/login")
+  public ResponseEntity<Response> login(@Valid @RequestBody LoginRequestDto dto) {
+    return authService.login(dto);
   }
 
   /**
@@ -106,5 +106,10 @@ public class AuthController {
   @PostMapping("refresh-token")
   public ResponseEntity<TokenResponseDto> refreshToken(@RequestBody RefreshTokenRequestDto dto) {
     return authService.refreshToken(dto);
+  }
+
+  @PostMapping("verify-otp")
+  public ResponseEntity<Response> verifyOtp(@RequestBody UserOtpRequestDto otpRequestDto) {
+    return authService.verifyOtp(otpRequestDto);
   }
 }

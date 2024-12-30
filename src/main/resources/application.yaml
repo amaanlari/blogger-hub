@@ -6,6 +6,21 @@ spring:
     mongodb:
       uri: ${MONGODB_URI}
       auto-index-creation: true
+    redis:
+      host: localhost
+      port: 6379
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 jwt:
   auth:
@@ -23,3 +38,6 @@ cloudinary:
 
 server:
   port: ${PORT:8080}
+
+otp:
+  ttl: ${OTP_TTL:1}

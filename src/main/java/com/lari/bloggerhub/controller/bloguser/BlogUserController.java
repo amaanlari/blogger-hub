@@ -7,6 +7,7 @@ import com.lari.bloggerhub.response.ErrorResponse;
 import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.service.bloguser.BlogUserService;
 import java.io.IOException;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -69,19 +71,8 @@ public class BlogUserController {
   @GetMapping("/id/{userId}")
   public ResponseEntity<Response> getUserById(
       @PathVariable String userId, Authentication authentication) {
-
-    String currentUserId = ((BlogUser) authentication.getPrincipal()).getId();
-    if (!currentUserId.equals(userId)) {
-      log.error("User with id {} is not authorized to view user with id {}", currentUserId, userId);
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(
-              new ErrorResponse(
-                  false,
-                  HttpStatus.UNAUTHORIZED.value(),
-                  Constant.NOT_AUTHORIZED_TO_VIEW_PROFILE,
-                  Constant.LOGGED_IN_USER_ID_DOES_NOT_MATCH_REQUESTED_USER_ID));
-    }
-    return blogUserService.getUserById(userId);
+    var isAuthorized = checkUserId(userId, authentication);
+    return isAuthorized != null ? isAuthorized : blogUserService.getUserById(userId);
   }
 
   /**
@@ -115,17 +106,20 @@ public class BlogUserController {
       @PathVariable String userId,
       @RequestBody UpdateBlogUserRequestDto updateUserRequestDto,
       Authentication authentication) {
-    String currentUserId = ((BlogUser) authentication.getPrincipal()).getId();
-    if (!currentUserId.equals(userId)) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(
-              new ErrorResponse(
-                  false,
-                  HttpStatus.UNAUTHORIZED.value(),
-                  Constant.NOT_AUTHORIZED_TO_VIEW_PROFILE,
-                  Constant.LOGGED_IN_USER_ID_DOES_NOT_MATCH_REQUESTED_USER_ID));
-    }
-    return blogUserService.updateUser(userId, updateUserRequestDto);
+    var isAuthorized = checkUserId(userId, authentication);
+    return isAuthorized != null
+        ? isAuthorized
+        : blogUserService.updateUser(userId, updateUserRequestDto);
+  }
+
+  @PreAuthorize("hasRole('FREE_USER')")
+  @PatchMapping("/{userId}")
+  public ResponseEntity<Response> updateUser(
+      @PathVariable String userId,
+      @RequestBody Map<String, Object> request,
+      Authentication authentication) {
+    var isAuthorized = checkUserId(userId, authentication);
+    return isAuthorized != null ? isAuthorized : blogUserService.updateUser(userId, request);
   }
 
   /**
@@ -144,17 +138,10 @@ public class BlogUserController {
       @RequestParam MultipartFile profilePicture,
       Authentication authentication)
       throws IOException {
-    String currentUserId = ((BlogUser) authentication.getPrincipal()).getId();
-    if (!currentUserId.equals(userId)) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(
-              new ErrorResponse(
-                  false,
-                  HttpStatus.UNAUTHORIZED.value(),
-                  Constant.NOT_AUTHORIZED_TO_VIEW_PROFILE,
-                  Constant.LOGGED_IN_USER_ID_DOES_NOT_MATCH_REQUESTED_USER_ID));
-    }
-    return blogUserService.uploadProfilePicture(userId, profilePicture);
+    var isAuthorized = checkUserId(userId, authentication);
+    return isAuthorized != null
+        ? isAuthorized
+        : blogUserService.uploadProfilePicture(userId, profilePicture);
   }
 
   /**
@@ -168,16 +155,24 @@ public class BlogUserController {
   @PostMapping("/{userId}/remove-profile-picture")
   public ResponseEntity<Response> removeProfilePicture(
       @PathVariable String userId, Authentication authentication) {
+    var isAuthorized = checkUserId(userId, authentication);
+    return isAuthorized != null ? isAuthorized : blogUserService.removeProfilePicture(userId);
+  }
+
+  private static ResponseEntity<Response> checkUserId(
+      String userId, Authentication authentication) {
     String currentUserId = ((BlogUser) authentication.getPrincipal()).getId();
     if (!currentUserId.equals(userId)) {
+      log.error(
+          "User with id {} is not authorized to access user with id {}", currentUserId, userId);
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
           .body(
               new ErrorResponse(
                   false,
                   HttpStatus.UNAUTHORIZED.value(),
-                  Constant.NOT_AUTHORIZED_TO_VIEW_PROFILE,
+                  Constant.NOT_AUTHORIZED_TO_ACCESS_PROFILE,
                   Constant.LOGGED_IN_USER_ID_DOES_NOT_MATCH_REQUESTED_USER_ID));
     }
-    return blogUserService.removeProfilePicture(userId);
+    return null;
   }
 }

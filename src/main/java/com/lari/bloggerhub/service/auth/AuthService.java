@@ -5,12 +5,16 @@ import com.lari.bloggerhub.document.RefreshToken;
 import com.lari.bloggerhub.dto.request.auth.LoginRequestDto;
 import com.lari.bloggerhub.dto.request.auth.RefreshTokenRequestDto;
 import com.lari.bloggerhub.dto.request.auth.SignupRequestDto;
+import com.lari.bloggerhub.dto.request.auth.UserOtpRequestDto;
 import com.lari.bloggerhub.dto.response.auth.TokenResponseDto;
 import com.lari.bloggerhub.repository.BlogUserRepository;
 import com.lari.bloggerhub.repository.RefreshTokenRepository;
+import com.lari.bloggerhub.response.DataResponse;
+import com.lari.bloggerhub.response.ErrorResponse;
 import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.response.SuccessResponse;
 import com.lari.bloggerhub.service.bloguser.BlogUserService;
+import com.lari.bloggerhub.service.bloguser.EmailService;
 import com.lari.bloggerhub.util.jwt.JwtHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,12 +40,13 @@ public class AuthService {
   public static final String INVALID_TOKEN = "Invalid token";
   private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
-  AuthenticationManager authenticationManager;
-  RefreshTokenRepository refreshTokenRepository;
-  BlogUserRepository blogUserRepository;
-  JwtHelper jwtHelper;
-  PasswordEncoder passwordEncoder;
-  BlogUserService blogUserService;
+  private final EmailService emailService;
+  private final AuthenticationManager authenticationManager;
+  private final RefreshTokenRepository refreshTokenRepository;
+  private final BlogUserRepository blogUserRepository;
+  private final JwtHelper jwtHelper;
+  private final PasswordEncoder passwordEncoder;
+  private final BlogUserService blogUserService;
 
   /**
    * Constructs a new instance of the {@link AuthService} class with the specified dependencies.
@@ -59,43 +64,15 @@ public class AuthService {
       BlogUserRepository blogUserRepository,
       JwtHelper jwtHelper,
       PasswordEncoder passwordEncoder,
-      BlogUserService blogUserService) {
+      BlogUserService blogUserService,
+      EmailService emailService) {
     this.authenticationManager = authenticationManager;
     this.refreshTokenRepository = refreshTokenRepository;
     this.blogUserRepository = blogUserRepository;
     this.jwtHelper = jwtHelper;
     this.passwordEncoder = passwordEncoder;
     this.blogUserService = blogUserService;
-  }
-
-  /**
-   * This method is used to log in a user to the Blogger Hub application.
-   *
-   * @param dto the login request data
-   * @return a {@link ResponseEntity} containing the response data
-   */
-  public ResponseEntity<TokenResponseDto> login(LoginRequestDto dto) {
-    log.info("Login attempt for user: {}", dto.getUsername());
-    try {
-      Authentication authentication =
-          authenticationManager.authenticate(
-              new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-      BlogUser user = (BlogUser) authentication.getPrincipal();
-
-      RefreshToken refreshToken = new RefreshToken();
-      refreshToken.setOwner(user);
-      refreshTokenRepository.save(refreshToken);
-
-      String accessToken = jwtHelper.generateAccessToken(user);
-      String refreshTokenString = jwtHelper.generateRefreshToken(user, refreshToken);
-
-      log.info("Login successful for user: {}", dto.getUsername());
-      return ResponseEntity.ok(new TokenResponseDto(user.getId(), accessToken, refreshTokenString));
-    } catch (Exception e) {
-      log.error("Login failed for user: {}", dto.getUsername());
-      throw new BadCredentialsException("Invalid credentials");
-    }
+    this.emailService = emailService;
   }
 
   /**
@@ -105,7 +82,7 @@ public class AuthService {
    * @return a {@link ResponseEntity} containing the response data
    */
   @Transactional
-  public ResponseEntity<TokenResponseDto> signup(SignupRequestDto dto) {
+  public ResponseEntity<Response> signup(SignupRequestDto dto) {
     log.info("Signup attempt for user: {}", dto.getUsername());
     try {
       if (blogUserRepository.existsByUsername(dto.getUsername())) {
@@ -134,9 +111,60 @@ public class AuthService {
       String accessToken = jwtHelper.generateAccessToken(user);
       String refreshTokenString = jwtHelper.generateRefreshToken(user, refreshToken);
 
-      return ResponseEntity.ok(new TokenResponseDto(user.getId(), accessToken, refreshTokenString));
+      return ResponseEntity.ok(
+          new DataResponse(
+              true,
+              HttpStatus.OK.value(),
+              "Signed up",
+              new TokenResponseDto(user.getId(), accessToken, refreshTokenString)));
     } catch (Exception e) {
       log.error("Signup failed for user: {}", dto.getUsername());
+      throw new BadCredentialsException("Invalid credentials");
+    }
+  }
+
+  /**
+   * This method is used to log in a user to the Blogger Hub application.
+   *
+   * @param dto the login request data
+   * @return a {@link ResponseEntity} containing the response data
+   */
+  public ResponseEntity<Response> login(LoginRequestDto dto) {
+    log.debug("Login attempt for user: {}", dto.getUsername());
+    BlogUser unauthenticatedUser =
+        blogUserRepository
+            .findByUsername(dto.getUsername())
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    if (!unauthenticatedUser.isVerified()) {
+      log.error("User not verified: {}", dto.getUsername());
+      emailService.sendVerificationEmail(unauthenticatedUser.getEmail());
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+          .body(
+              new ErrorResponse(false, HttpStatus.UNAUTHORIZED.value(), "User not verified", null));
+    }
+    try {
+      Authentication authentication =
+          authenticationManager.authenticate(
+              new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
+      SecurityContextHolder.getContext().setAuthentication(authentication);
+      BlogUser user = (BlogUser) authentication.getPrincipal();
+
+      RefreshToken refreshToken = new RefreshToken();
+      refreshToken.setOwner(user);
+      refreshTokenRepository.save(refreshToken);
+
+      String accessToken = jwtHelper.generateAccessToken(user);
+      String refreshTokenString = jwtHelper.generateRefreshToken(user, refreshToken);
+
+      log.info("Login successful for user: {}", dto.getUsername());
+      return ResponseEntity.ok(
+          new DataResponse(
+              true,
+              HttpStatus.OK.value(),
+              "Logged in",
+              new TokenResponseDto(user.getId(), accessToken, refreshTokenString)));
+    } catch (Exception e) {
+      log.error("Login failed for user: {}", dto.getUsername());
       throw new BadCredentialsException("Invalid credentials");
     }
   }
@@ -262,5 +290,21 @@ public class AuthService {
       log.error("Refresh token generation failed");
       throw e;
     }
+  }
+
+  /**
+   * This method is used to send an OTP to the user's email address for verification.
+   *
+   * @param otpRequestDto the user OTP request data containing the email address and OTP code to
+   *     send to the user email address for verification purposes {@link UserOtpRequestDto}
+   * @return a {@link ResponseEntity} containing the response data
+   */
+  public ResponseEntity<Response> verifyOtp(UserOtpRequestDto otpRequestDto) {
+    boolean isVerified = emailService.verifyEmail(otpRequestDto.getEmail(), otpRequestDto.getOtp());
+    if (isVerified) {
+      return ResponseEntity.ok(new SuccessResponse(true, HttpStatus.OK.value(), "Email verified"));
+    }
+    return ResponseEntity.ok(
+        new ErrorResponse(false, HttpStatus.UNAUTHORIZED.value(), "Invalid OTP", null));
   }
 }
