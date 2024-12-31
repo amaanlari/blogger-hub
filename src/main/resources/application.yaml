@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: blogger-hub
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI}
+      auto-index-creation: true
+    redis:
+      host: localhost
+      port: 6379
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+jwt:
+  auth:
+    accessTokenSecret: ${ACCESS_TOKEN_SECRET}
+    refreshTokenSecret: ${REFRESH_TOKEN_SECRET}
+    refreshTokenExpirationDays: ${REFRESH_TOKEN_EXPIRATION_DAYS}
+    accessTokenExpirationMinutes: ${ACCESS_TOKEN_EXPIRATION_MINUTES}
+
+cloudinary:
+  cloud:
+    name: ${CLOUDINARY_CLOUD_NAME}
+    default-profile-pic: ${CLOUDINARY_DEFAULT_PROFILE_PIC}
+  api:
+    key: ${CLOUDINARY_API_KEY}
+    secret: ${CLOUDINARY_API_SECRET}
+
+server:
+  port: ${PORT:8080}
+
+otp:
+  ttl: ${OTP_TTL:1}
