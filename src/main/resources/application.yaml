@@ -7,8 +7,10 @@ spring:
       uri: ${MONGODB_URI}
       auto-index-creation: true
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      username: ${REDIS_USERNAME:}
+      password: ${REDIS_PASSWORD:}
 
   mail:
     host: ${MAIL_HOST}
