@@ -86,10 +86,16 @@ public class BlogUserController {
     return blogUserService.getUserByUsername(username);
   }
 
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasRole('ADMIN_USER')")
   @GetMapping("/all")
   public ResponseEntity<Response> getAllUsers() {
     return blogUserService.getAllUsers();
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN_USER')")
+  @GetMapping("/all-users-details")
+  public ResponseEntity<Response> getAllUsersDetails() {
+    return blogUserService.getAllUsersDetails();
   }
 
   /**

@@ -13,6 +13,7 @@ import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.response.SuccessResponse;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -78,6 +79,8 @@ public class BlogUserService implements UserDetailsService {
 
     BlogUser blogUser = new BlogUser();
     BeanUtils.copyProperties(userDto, blogUser);
+    blogUser.setCreatedAt(Instant.now());
+    blogUser.setUpdatedAt(Instant.now());
 
     emailService.sendVerificationEmail(blogUser.getEmail());
     blogUserRepository.save(blogUser);
@@ -189,6 +192,7 @@ public class BlogUserService implements UserDetailsService {
             throw new RuntimeException(e);
           }
         });
+    user.setUpdatedAt(Instant.now());
     blogUserRepository.save(user);
     return ResponseEntity.ok(
         new SuccessResponse(true, HttpStatus.OK.value(), "User updated successfully."));
@@ -198,6 +202,7 @@ public class BlogUserService implements UserDetailsService {
   public ResponseEntity<Response> updateEmail(String userId, String newEmail, String otp) {
     BlogUser currentUser = this.findById(userId);
     if (emailService.verifyEmail(currentUser, newEmail, otp)) {
+      currentUser.setUpdatedAt(Instant.now());
       return ResponseEntity.ok(
           new SuccessResponse(true, HttpStatus.OK.value(), "Email updated successfully."));
     }
@@ -237,6 +242,7 @@ public class BlogUserService implements UserDetailsService {
           .ifPresent(
               user -> {
                 user.setProfilePicture(profilePictureUrl);
+                user.setUpdatedAt(Instant.now());
                 blogUserRepository.save(user);
               });
     } catch (Exception e) {
@@ -281,6 +287,7 @@ public class BlogUserService implements UserDetailsService {
     try {
       if (!profilePicUrl.startsWith("http")) {
         currentUser.setProfilePicture(Constant.DEFAULT_PROFILE_IMAGE_URL);
+        currentUser.setUpdatedAt(Instant.now());
         blogUserRepository.save(currentUser);
         return ResponseEntity.ok(
             new SuccessResponse(
@@ -320,5 +327,14 @@ public class BlogUserService implements UserDetailsService {
     return blogUserRepository
         .findByUsername(username)
         .orElseThrow(() -> new UsernameNotFoundException("Username not found"));
+  }
+
+  public ResponseEntity<Response> getAllUsersDetails() {
+    return ResponseEntity.ok(
+        new DataResponse(
+            true,
+            HttpStatus.OK.value(),
+            "Records found.",
+            blogUserRepository.findAll()));
   }
 }

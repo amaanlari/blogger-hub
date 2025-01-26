@@ -5,6 +5,11 @@ import org.springframework.beans.factory.annotation.Value;
 /** This class contains constant values used throughout the Blogger Hub application. */
 public class Constant {
 
+  public static final String UNAUTHORIZED = "Unauthorized";
+  public static final String LOGGED_IN_USER_ID_NOT_MATCH_REQUESTED_USER_ID =
+      "Logged in user's id does not match requested user's id";
+  public static final String PREMIUM_POST = "This is a premium post";
+
   /** Private constructor to prevent instantiation of this class. */
   private Constant() {}
 
@@ -19,6 +24,7 @@ public class Constant {
       "You are not authorized to access this user's profile";
   public static final String LOGGED_IN_USER_ID_DOES_NOT_MATCH_REQUESTED_USER_ID =
       "Logged in user's id does not match the requested user's id";
+  public static final String POST_NOT_FOUND = "Blog post not found";
 
   // Redis Keys
   public static final String OTP_KEY_PREFIX = "OTP_%s";
