@@ -11,6 +11,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -39,13 +40,23 @@ public class BlogUser implements UserDetails {
 
   private String password;
   private String bio;
+
+  @Field("profile_picture")
   private String profilePicture;
+
+  @Field("is_verified")
   private boolean isVerified;
+
   private List<Role> roles;
   private AccountStatus status;
 
-  @CreatedDate private Instant createdAt;
-  @LastModifiedDate private Instant updatedAt;
+  @Field("created_at")
+  @CreatedDate
+  private Instant createdAt;
+
+  @Field("updated_at")
+  @LastModifiedDate
+  private Instant updatedAt;
 
   /** Default constructor initializing the user with default values. */
   public BlogUser() {
