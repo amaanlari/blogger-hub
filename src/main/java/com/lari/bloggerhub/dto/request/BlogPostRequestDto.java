@@ -1,7 +1,5 @@
 package com.lari.bloggerhub.dto.request;
 
-import java.util.StringJoiner;
-
 public class BlogPostRequestDto {
 
   private String title;
@@ -49,15 +47,5 @@ public class BlogPostRequestDto {
 
   public void setContent(String content) {
     this.content = content;
-  }
-
-  @Override
-  public String toString() {
-    return new StringJoiner(", ", BlogPostRequestDto.class.getSimpleName() + "[", "]")
-            .add("title='" + title + "'")
-            .add("description='" + description + "'")
-            .add("bannerImageUrl='" + bannerImageUrl + "'")
-            .add("content='" + content + "'")
-            .toString();
   }
 }

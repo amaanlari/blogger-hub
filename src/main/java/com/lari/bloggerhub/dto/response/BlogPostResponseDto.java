@@ -1,7 +1,5 @@
 package com.lari.bloggerhub.dto.response;
 
-import java.time.Instant;
-
 public class BlogPostResponseDto {
 
   private String blogPostId;
@@ -11,24 +9,23 @@ public class BlogPostResponseDto {
   private String content;
   private boolean isPremium;
   private String createdBy;
-  private Instant createdAt;
+  private String createdAt;
   private String updatedBy;
-  private Instant updatedAt;
-
+  private String updatedAt;
 
   public BlogPostResponseDto() {}
 
   public BlogPostResponseDto(
-          String blogPostId,
-          String title,
-          String description,
-          String bannerImageUrl,
-          String content,
-          boolean isPremium,
-          String createdBy,
-          Instant createdAt,
-          String updatedBy,
-          Instant updatedAt) {
+      String blogPostId,
+      String title,
+      String description,
+      String bannerImageUrl,
+      String content,
+      boolean isPremium,
+      String createdBy,
+      String createdAt,
+      String updatedBy,
+      String updatedAt) {
     this.blogPostId = blogPostId;
     this.title = title;
     this.description = description;
@@ -97,11 +94,11 @@ public class BlogPostResponseDto {
     this.createdBy = createdBy;
   }
 
-  public Instant getCreatedAt() {
+  public String getCreatedAt() {
     return createdAt;
   }
 
-  public void setCreatedAt(Instant createdAt) {
+  public void setCreatedAt(String createdAt) {
     this.createdAt = createdAt;
   }
 
@@ -113,12 +110,11 @@ public class BlogPostResponseDto {
     this.updatedBy = updatedBy;
   }
 
-
-  public Instant getUpdatedAt() {
+  public String getUpdatedAt() {
     return updatedAt;
   }
 
-  public void setUpdatedAt(Instant updatedAt) {
+  public void setUpdatedAt(String updatedAt) {
     this.updatedAt = updatedAt;
   }
 }
