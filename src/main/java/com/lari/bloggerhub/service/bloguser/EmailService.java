@@ -58,6 +58,7 @@ public class EmailService {
 
       helper.setText(htmlContent, true);
       mailSender.send(message);
+      log.info("OTP verification email sent");
     } catch (Exception e) {
       log.error("Failed to send OTP to {}", email, e);
     }

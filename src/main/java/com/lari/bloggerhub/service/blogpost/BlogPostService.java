@@ -8,6 +8,7 @@ import com.lari.bloggerhub.dto.response.BlogPostResponseDto;
 import com.lari.bloggerhub.dto.response.BlogUserRef;
 import com.lari.bloggerhub.enums.Role;
 import com.lari.bloggerhub.repository.BlogPostRepository;
+import com.lari.bloggerhub.repository.BlogUserRepository;
 import com.lari.bloggerhub.response.DataResponse;
 import com.lari.bloggerhub.response.ErrorResponse;
 import com.lari.bloggerhub.response.Response;
@@ -18,6 +19,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
@@ -28,9 +30,12 @@ public class BlogPostService {
   private static final Logger log = LoggerFactory.getLogger(BlogPostService.class);
 
   private final BlogPostRepository blogPostRepository;
+  private final BlogUserRepository blogUserRepository;
 
-  public BlogPostService(BlogPostRepository blogPostRepository) {
+  public BlogPostService(
+      BlogPostRepository blogPostRepository, BlogUserRepository blogUserRepository) {
     this.blogPostRepository = blogPostRepository;
+    this.blogUserRepository = blogUserRepository;
   }
 
   public ResponseEntity<Response> createBlogPost(
@@ -39,11 +44,11 @@ public class BlogPostService {
     BlogUser currentUser = (BlogUser) authentication.getPrincipal();
     BlogPost blogPost = new BlogPost();
     BeanUtils.copyProperties(blogPostRequestDto, blogPost);
-    blogPost.setCreatedAt(Instant.now());
     BlogUserRef currentUserRef = new BlogUserRef();
     BeanUtils.copyProperties(currentUser, currentUserRef);
     log.info("Current user ref: {}", currentUserRef);
     blogPost.setCreatedBy(currentUserRef);
+    blogPost.setUpdatedBy(currentUserRef);
     blogPostRepository.save(blogPost);
     return ResponseEntity.ok(
         new SuccessResponse(true, HttpStatus.OK.value(), "Blog post created successfully"));
@@ -83,12 +88,22 @@ public class BlogPostService {
   }
 
   public ResponseEntity<Response> getAllBlogPostsByUsername(String username) {
+    BlogUser blogUser =
+        blogUserRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+    BlogUserRef currentUserRef = new BlogUserRef();
+    BeanUtils.copyProperties(blogUser, currentUserRef);
+
     List<BlogPostResponseDto> blogPosts =
-        blogPostRepository.findAllByCreatedBy_Username(username).stream()
+        blogPostRepository.findAllByCreatedBy(currentUserRef).stream()
             .map(
                 blogPost -> {
                   BlogPostResponseDto blogPostResponseDto = new BlogPostResponseDto();
                   BeanUtils.copyProperties(blogPost, blogPostResponseDto);
+                  blogPostResponseDto.setCreatedBy(blogPost.getCreatedBy().getUsername());
+                  blogPostResponseDto.setUpdatedBy(blogPost.getUpdatedBy().getUsername());
                   return blogPostResponseDto;
                 })
             .toList();
@@ -116,6 +131,8 @@ public class BlogPostService {
                   null));
     }
     BeanUtils.copyProperties(updatedBlogPost, blogPost);
+    log.info("Updating blog post: {}", blogPost);
+    log.info("Blog post payload: {}", updatedBlogPost);
     blogPost.setUpdatedAt(Instant.now());
     blogPostRepository.save(blogPost);
     return ResponseEntity.ok(
