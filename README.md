@@ -14,23 +14,26 @@ Blogger Hub is a comprehensive blogging platform that enables users to create, m
     - Like and comment on blogs
     - Support for threaded replies in comments
 
-- **Notification Module**
-    - Real-time notifications using **Apache Kafka**
-    - Notifications for likes, comments, and follows
-
 - **Media Management**
     - Store profile pictures and blog images using **Cloudinary**
 
 - **Database**
     - MongoDB for managing users, blogs, and interactions
 
+#### Features in Progress
+- **User Follow Feature**
+    - Follow and unfollow users
+
+- **Notification Module**
+    - Real-time notifications using queuing system (RabbitMQ or Apache Kafka etc.)
+    - Notifications for likes, comments, and follows
+
 ## Tech Stack
 
 - **Backend Framework**: Spring Boot
 - **Database**: MongoDB (with migration plans to DynamoDB)
-- **Authentication**: JWT
-- **Messaging**: Apache Kafka
 - **File Storage**: Cloudinary
+- **API Documentation**: Postman
 - **Build Tool**: Maven
 
 ## Project Structure
@@ -40,16 +43,21 @@ blogger-hub/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/bloggerhub/
-│   │   │   ├── config/          # Configuration files
-│   │   │   ├── controllers/     # REST controllers
-│   │   │   ├── models/          # Entity classes
-│   │   │   ├── repositories/    # Database repositories
-│   │   │   ├── services/        # Business logic
-│   │   │   └── utils/           # Utility classes
+│   │   │   ├── config/           # Configuration files
+│   │   │   ├── constant/         # Constants files
+│   │   │   ├── controllers/      # REST controllers
+│   │   │   ├── document/         # Entity classes
+│   │   │   ├── dto/              # DTO classes
+│   │   │   ├── enums/            # Enum classes
+│   │   │   ├── repository/       # Database repositories
+│   │   │   ├── response/         # API responses
+│   │   │   ├── security/         # Security filters and configs 
+│   │   │   ├── service/          # Business logic
+│   │   │   └── util/             # Utility classes
 │   └── test/
-│       └── java/com/bloggerhub/ # Unit and integration tests
-├── pom.xml                      # Maven configuration
-└── README.md                    # Project documentation
+│       └── java/com/bloggerhub/  # Unit and integration tests
+├── pom.xml                       # Maven configuration
+└── README.md                     # Project documentation
 ```
 
 ## Installation
@@ -89,9 +97,13 @@ http://localhost:8080/swagger-ui/index.html
 
 ### Configuration
 
-The application uses profiles for different environments. Set the active profile as needed:
+The application uses profiles for different environments. Set the active profile as needed using the follwing:
 ```bash
--Dspring.profiles.active=dev
+  -Dspring.profiles.active=<profile>
+
+                    OR
+
+  -Dspring-boot.run.profiles=<profile>
 ```
 
 ## Contributing
@@ -122,3 +134,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 For queries, reach out to **Amaan Lari**:
 - LinkedIn: [amaanlari](https://linkedin.com/in/amaanlari)
 - Twitter: [amaanlari_](https://x.com/amaanlari_)
+- Instagram: [amaanlari_](https://instagram.com/amaanlari_)
