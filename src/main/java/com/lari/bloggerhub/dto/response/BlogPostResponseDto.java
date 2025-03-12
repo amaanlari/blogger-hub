@@ -15,6 +15,7 @@ public class BlogPostResponseDto {
   private String updatedBy;
   private Instant updatedAt;
 
+
   public BlogPostResponseDto() {}
 
   public BlogPostResponseDto(
@@ -111,6 +112,7 @@ public class BlogPostResponseDto {
   public void setUpdatedBy(String updatedBy) {
     this.updatedBy = updatedBy;
   }
+
 
   public Instant getUpdatedAt() {
     return updatedAt;

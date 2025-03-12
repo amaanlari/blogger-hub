@@ -44,6 +44,7 @@ public class BlogPostService {
     BlogUser currentUser = (BlogUser) authentication.getPrincipal();
     BlogPost blogPost = new BlogPost();
     BeanUtils.copyProperties(blogPostRequestDto, blogPost);
+
     BlogUserRef currentUserRef = new BlogUserRef();
     BeanUtils.copyProperties(currentUser, currentUserRef);
     log.info("Current user ref: {}", currentUserRef);
