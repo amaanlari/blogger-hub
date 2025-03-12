@@ -304,7 +304,7 @@ public class AuthService {
     if (isVerified) {
       return ResponseEntity.ok(new SuccessResponse(true, HttpStatus.OK.value(), "Email verified"));
     }
-    return ResponseEntity.ok(
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
         new ErrorResponse(false, HttpStatus.UNAUTHORIZED.value(), "Invalid OTP", null));
   }
 }

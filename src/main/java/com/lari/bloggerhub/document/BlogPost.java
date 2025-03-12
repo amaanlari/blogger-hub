@@ -38,7 +38,7 @@ public class BlogPost {
 
   @CreatedDate
   @Field("created_at")
-  Instant createdAt;
+  Instant createdAt = Instant.now();
 
   @DocumentReference(collection = "blog_user")
   @LastModifiedBy
@@ -47,7 +47,7 @@ public class BlogPost {
 
   @LastModifiedDate
   @Field("updated_at")
-  Instant updatedAt;
+  Instant updatedAt = Instant.now();
 
   public String getBlogPostId() {
     return blogPostId;

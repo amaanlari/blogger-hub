@@ -6,8 +6,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class BloggerHubApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
-
+  @Test
+  void contextLoads() {
+    // This test is used to check if the application context loads successfully
+  }
 }
