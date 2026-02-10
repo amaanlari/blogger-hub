@@ -1,15 +1,18 @@
 package com.lari.bloggerhub.service.interactions;
 
+import com.lari.bloggerhub.document.BlogPost;
 import com.lari.bloggerhub.document.BlogUser;
 import com.lari.bloggerhub.document.Likes;
 import com.lari.bloggerhub.dto.response.BlogPostResponseDto;
 import com.lari.bloggerhub.dto.response.BlogUserResponseDto;
+import com.lari.bloggerhub.enums.NotificationType;
 import com.lari.bloggerhub.repository.BlogPostRepository;
 import com.lari.bloggerhub.repository.BlogUserRepository;
 import com.lari.bloggerhub.repository.LikesRepository;
 import com.lari.bloggerhub.response.DataResponse;
 import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.response.SuccessResponse;
+import com.lari.bloggerhub.service.notification.KafkaNotificationProducer;
 import com.mongodb.DuplicateKeyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,15 +32,18 @@ public class LikesService {
   private final LikesRepository likesRepository;
   private final BlogPostRepository blogPostRepository;
   private final BlogUserRepository blogUserRepository;
+  private final KafkaNotificationProducer notificationProducer;
 
   public LikesService(
       LikesRepository likesRepository,
       BlogPostRepository blogPostRepository,
-      BlogUserRepository blogUserRepository) {
+      BlogUserRepository blogUserRepository,
+      KafkaNotificationProducer notificationProducer) {
 
     this.likesRepository = likesRepository;
     this.blogPostRepository = blogPostRepository;
     this.blogUserRepository = blogUserRepository;
+    this.notificationProducer = notificationProducer;
   }
 
   public ResponseEntity<Response> addLike(String blogPostId, Authentication authentication)
@@ -48,9 +54,23 @@ public class LikesService {
     like.setUserId(userId);
     like.setPostId(blogPostId);
 
+    Likes savedLike = likesRepository.save(like);
+
+    // Send notification to post author
+    BlogPost post = blogPostRepository.findById(blogPostId).orElse(null);
+    if (post != null && post.getCreatedBy() != null) {
+      notificationProducer.sendNotificationEvent(
+          post.getCreatedBy().getId(),
+          NotificationType.POST_LIKED,
+          userId,
+          blogPostId,
+          "post"
+      );
+    }
+
     return ResponseEntity.ok(
         new DataResponse(
-            true, HttpStatus.OK.value(), "Like added successfully", likesRepository.save(like)));
+            true, HttpStatus.OK.value(), "Like added successfully", savedLike));
   }
 
   public ResponseEntity<Response> removeLike(String blogPostId, Authentication authentication) {
