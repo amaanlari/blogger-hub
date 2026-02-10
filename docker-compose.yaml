@@ -5,13 +5,98 @@ services:
     image: mongo
     container_name: mongodb
     ports:
-      - "27017:27017"
+      - "27018:27017"
+    networks:
+      - blogger-hub-network
 
   redis:
     image: redis
     container_name: redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
+    networks:
+      - blogger-hub-network
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    user: root
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      # KRaft settings
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Listeners
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # Cluster ID (required for KRaft mode)
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+
+      # Log directories
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      # Other settings
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - blogger-hub-network
+
+  kafka-init:
+    image: apache/kafka:latest
+    container_name: kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Waiting for Kafka to be ready...'
+      sleep 10
+
+      echo 'Creating Kafka topics...'
+
+      # Create notifications topic with 3 partitions and replication factor 1
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+        --create \
+        --if-not-exists \
+        --topic blogger-hub-notifications \
+        --partitions 3 \
+        --replication-factor 1 \
+        --config retention.ms=604800000 \
+        --config segment.ms=86400000
+
+      echo 'Topics created successfully!'
+
+      # List all topics
+      echo 'Listing all topics:'
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+
+      # Describe the notifications topic
+      echo 'Describing notifications topic:'
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic blogger-hub-notifications
+
+      echo 'Kafka initialization complete!'
+      "
+    networks:
+      - blogger-hub-network
 
   blogger-hub:
     build:
@@ -21,8 +106,20 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8080:8080"
-    links:
+    depends_on:
       - mongodb
       - redis
+      - kafka
+      - kafka-init
+    networks:
+      - blogger-hub-network
+
+networks:
+  blogger-hub-network:
+    driver: bridge
+
+volumes:
+  kafka-data:
