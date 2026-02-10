@@ -2,6 +2,7 @@ package com.lari.bloggerhub.service.bloguser;
 
 import com.lari.bloggerhub.constant.Constant;
 import com.lari.bloggerhub.document.BlogUser;
+import com.lari.bloggerhub.enums.NotificationType;
 import com.lari.bloggerhub.repository.BlogUserRepository;
 import com.lari.bloggerhub.service.RedisService;
 import jakarta.mail.internet.MimeMessage;
@@ -85,5 +86,90 @@ public class EmailService {
       return true;
     }
     return false;
+  }
+
+  @Async
+  public void sendNotificationEmail(
+      String recipientEmail,
+      String recipientUsername,
+      NotificationType type,
+      String actorUsername,
+      String targetTitle,
+      String content) {
+
+    if (recipientEmail == null || recipientEmail.isEmpty()) {
+      log.warn("Cannot send notification email: recipient email is null or empty");
+      return;
+    }
+
+    try {
+      String sender = Constant.MAIL_SENDER;
+      MimeMessage message = mailSender.createMimeMessage();
+      MimeMessageHelper helper = new MimeMessageHelper(message, true);
+      helper.setFrom(sender);
+      helper.setTo(recipientEmail);
+
+      String htmlContent = "";
+      String subject = "";
+
+      switch (type) {
+        case NEW_FOLLOWER:
+          subject = "New Follower on Blogger Hub";
+          htmlContent = Constant.EMAIL_CONTENT_NEW_FOLLOWER.formatted(recipientUsername, actorUsername);
+          break;
+
+        case POST_LIKED:
+          subject = "Someone liked your post";
+          htmlContent =
+              Constant.EMAIL_CONTENT_POST_LIKED.formatted(
+                  recipientUsername, actorUsername, targetTitle);
+          break;
+
+        case POST_COMMENTED:
+          subject = "New comment on your post";
+          htmlContent =
+              Constant.EMAIL_CONTENT_POST_COMMENTED.formatted(
+                  recipientUsername, actorUsername, targetTitle, content);
+          break;
+
+        case COMMENT_REPLIED:
+          subject = "New reply to your comment";
+          htmlContent =
+              Constant.EMAIL_CONTENT_COMMENT_REPLIED.formatted(
+                  recipientUsername, actorUsername, content);
+          break;
+
+        case COMMENT_LIKED:
+          subject = "Someone liked your comment";
+          htmlContent =
+              Constant.EMAIL_CONTENT_COMMENT_LIKED.formatted(recipientUsername, actorUsername);
+          break;
+
+        case MENTION_IN_POST:
+          subject = "You were mentioned in a post";
+          htmlContent =
+              Constant.EMAIL_CONTENT_MENTION.formatted(
+                  recipientUsername, actorUsername, "post", content);
+          break;
+
+        case MENTION_IN_COMMENT:
+          subject = "You were mentioned in a comment";
+          htmlContent =
+              Constant.EMAIL_CONTENT_MENTION.formatted(
+                  recipientUsername, actorUsername, "comment", content);
+          break;
+
+        default:
+          log.warn("Unknown notification type: {}", type);
+          return;
+      }
+
+      helper.setSubject(subject);
+      helper.setText(htmlContent, true);
+      mailSender.send(message);
+      log.info("Notification email sent to {} for {}", recipientEmail, type);
+    } catch (Exception e) {
+      log.error("Failed to send notification email to {}", recipientEmail, e);
+    }
   }
 }

@@ -47,6 +47,9 @@ public class BlogUser implements UserDetails {
   @Field("is_verified")
   private boolean isVerified;
 
+  @Field("email_notifications_enabled")
+  private boolean emailNotificationsEnabled = true;
+
   private List<Role> roles;
   private AccountStatus status;
 
@@ -119,6 +122,14 @@ public class BlogUser implements UserDetails {
 
   public void setVerified(boolean verified) {
     isVerified = verified;
+  }
+
+  public boolean isEmailNotificationsEnabled() {
+    return emailNotificationsEnabled;
+  }
+
+  public void setEmailNotificationsEnabled(boolean emailNotificationsEnabled) {
+    this.emailNotificationsEnabled = emailNotificationsEnabled;
   }
 
   public List<Role> getRoles() {
