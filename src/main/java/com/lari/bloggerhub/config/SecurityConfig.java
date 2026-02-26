@@ -40,7 +40,8 @@ public class SecurityConfig {
     "/webjars/**",
     "/swagger-ui/**",
     "/api/auth/**",
-    "/api/users/{username}"
+    "/api/users/{username}",
+    "/actuator/**"
   };
 
   private final AccessTokenEntryPoint accessTokenEntryPoint;
@@ -102,7 +103,7 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             authorizeRequests ->
                 authorizeRequests
-                    .requestMatchers("/api/auth/**")
+                    .requestMatchers("/api/auth/**", "/actuator/**")
                     .permitAll()
                     .requestMatchers(AUTH_WHITELIST)
                     .permitAll()

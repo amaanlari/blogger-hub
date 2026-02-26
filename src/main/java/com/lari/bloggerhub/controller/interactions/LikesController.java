@@ -2,7 +2,6 @@ package com.lari.bloggerhub.controller.interactions;
 
 import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.service.interactions.LikesService;
-import org.bson.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
