@@ -18,9 +18,9 @@ public class RedisService {
 
   public void set(String key, String value, long ttl) {
     redisTemplate.opsForValue().set(key, value, ttl, TimeUnit.MINUTES);
-      if (log.isDebugEnabled()) {
-          log.debug("stored value: {}", redisTemplate.opsForValue().get(key));
-      }
+    if (log.isDebugEnabled()) {
+      log.debug("stored value: {}", redisTemplate.opsForValue().get(key));
+    }
   }
 
   public String get(String key) {
