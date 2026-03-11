@@ -1,41 +1,52 @@
-# === Stage 1: Build the application ===
-FROM eclipse-temurin:21-jdk AS builder
+# ---------- Build Spring Boot ----------
+FROM eclipse-temurin:21-jdk-jammy AS builder
 
-# Set working directory inside the container
-WORKDIR /app
+WORKDIR /build
 
-# Copy Maven wrapper and dependency files for caching dependencies
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
-RUN ./mvnw dependency:go-offline
+RUN ./mvnw -q -B dependency:go-offline
 
-# Copy the source code and build the application
-COPY src ./src
-RUN ./mvnw clean package -DskipTests
+COPY src src
+RUN ./mvnw -q -B clean package -DskipTests
 
-# === Stage 2: Create a minimal runtime image ===
-FROM eclipse-temurin:21-jre AS runtime
 
-## Set non-root user for security
-#RUN useradd -m spring
-#USER spring
+# ---------- Get Kafka Runtime ----------
+FROM apache/kafka:latest AS kafka
 
-# Set working directory
+
+# ---------- Final Image ----------
+FROM eclipse-temurin:21-jre-jammy
+
 WORKDIR /app
 
-# Copy the built JAR from the builder stage
-COPY --from=builder /app/target/blogger-hub-0.0.1-SNAPSHOT.jar app.jar
+# Copy Kafka from official image
+COPY --from=kafka /opt/kafka /opt/kafka
 
-# Expose the application port
+# Copy Spring Boot jar
+COPY --from=builder /build/target/blogger-hub-0.0.1-SNAPSHOT.jar app.jar
+
+# Copy startup script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# -------- Environment Variables --------
+ENV CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk \
+    KAFKA_NODE_ID=1 \
+    KAFKA_PROCESS_ROLES=broker,controller \
+    KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093 \
+    KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER \
+    KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 \
+    KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092 \
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT \
+    KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
+    KAFKA_LOG_DIRS=/var/lib/kafka/data \
+    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
+    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1 \
+    KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1 \
+    KAFKA_AUTO_CREATE_TOPICS_ENABLE=false \
+    SPRING_PROFILES_ACTIVE=staging
+
 EXPOSE 8080
 
-# Debug port
-EXPOSE 5005
-
-# Run the application
-ENTRYPOINT ["java",
-"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
-"-jar",
-"app.jar",
-"--spring.profiles.active=${SPRING_PROFILES_ACTIVE}"
-]
+ENTRYPOINT ["/start.sh"]
