@@ -54,6 +54,5 @@ echo "Creating topic..."
 echo "Starting Spring Boot..."
 
 exec java \
--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 \
 -jar app.jar \
 --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
