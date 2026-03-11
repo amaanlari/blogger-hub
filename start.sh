@@ -60,5 +60,4 @@ echo "Starting Spring Boot..."
 
 exec java \
 -jar app.jar \
---server.port=${PORT:-8080} \
 --spring.profiles.active=${SPRING_PROFILES_ACTIVE}
