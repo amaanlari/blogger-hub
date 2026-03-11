@@ -1,52 +1,34 @@
-# ---------- Build Spring Boot ----------
-FROM eclipse-temurin:21-jdk-jammy AS builder
+# === Stage 1: Build the application ===
+FROM eclipse-temurin:21-jdk AS builder
 
-WORKDIR /build
-
-COPY mvnw pom.xml ./
-COPY .mvn .mvn
-RUN ./mvnw -q -B dependency:go-offline
-
-COPY src src
-RUN ./mvnw -q -B clean package -DskipTests
-
-
-# ---------- Get Kafka Runtime ----------
-FROM apache/kafka:latest AS kafka
-
-
-# ---------- Final Image ----------
-FROM eclipse-temurin:21-jre-jammy
-
+# Set working directory inside the container
 WORKDIR /app
 
-# Copy Kafka from official image
-COPY --from=kafka /opt/kafka /opt/kafka
+# Copy Maven wrapper and dependency files for caching dependencies
+COPY mvnw pom.xml ./
+COPY .mvn .mvn
+RUN ./mvnw dependency:go-offline
 
-# Copy Spring Boot jar
-COPY --from=builder /build/target/blogger-hub-0.0.1-SNAPSHOT.jar app.jar
+# Copy the source code and build the application
+COPY src ./src
+RUN ./mvnw clean package -DskipTests
 
-# Copy startup script
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+# === Stage 2: Create a minimal runtime image ===
+FROM eclipse-temurin:21-jre AS runtime
 
-# -------- Environment Variables --------
-ENV CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk \
-    KAFKA_NODE_ID=1 \
-    KAFKA_PROCESS_ROLES=broker,controller \
-    KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093 \
-    KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER \
-    KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 \
-    KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092 \
-    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT \
-    KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
-    KAFKA_LOG_DIRS=/var/lib/kafka/data \
-    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
-    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1 \
-    KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1 \
-    KAFKA_AUTO_CREATE_TOPICS_ENABLE=false \
-    SPRING_PROFILES_ACTIVE=staging
+## Set non-root user for security
+#RUN useradd -m spring
+#USER spring
 
+# Set working directory
+WORKDIR /app
+
+# Copy the built JAR from the builder stage
+COPY --from=builder /app/target/blogger-hub-0.0.1-SNAPSHOT.jar app.jar
+
+# Expose the application port
 EXPOSE 8080
 
-ENTRYPOINT ["/start.sh"]
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=${SPRING_PROFILES_ACTIVE}"]

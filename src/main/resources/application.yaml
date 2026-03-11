@@ -13,6 +13,9 @@ spring:
       password: ${REDIS_PASSWORD:}
 
   kafka:
+    ssl:
+      trust-store-location: ${KAFKA_SSL_TRUSTSTORE_PATH}
+      key-store-location: ${KAFKA_SSL_KEYSTORE_PATH}
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:blogger-hub-notifications}
@@ -61,3 +64,9 @@ server:
 
 otp:
   ttl: ${OTP_TTL:1}
+
+aiven:
+  basic:
+    auth:
+      user:
+        info: ${AIVEN_BASIC_AUTH_USER_INFO}
