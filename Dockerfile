@@ -29,6 +29,13 @@ COPY --from=builder /app/target/blogger-hub-0.0.1-SNAPSHOT.jar app.jar
 # Expose the application port
 EXPOSE 8080
 
+# Debug port
+EXPOSE 5005
 
 # Run the application
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=${SPRING_PROFILES_ACTIVE}"]
+ENTRYPOINT ["java",
+"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005",
+"-jar",
+"app.jar",
+"--spring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+]
