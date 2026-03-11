@@ -58,6 +58,6 @@ echo "Creating topic..."
 
 echo "Starting Spring Boot..."
 
-exec java \
--jar app.jar \
---spring.profiles.active=${SPRING_PROFILES_ACTIVE}
+exec java -jar app.jar \
+     --spring.profiles.active=staging \
+     --spring.config.additional-location=file:/etc/secrets/application-staging.yaml
