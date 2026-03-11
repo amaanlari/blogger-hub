@@ -34,8 +34,13 @@ echo "Starting Kafka..."
 
 echo "Waiting for Kafka..."
 
-until /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1
+for i in {1..20}
 do
+  if /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1
+  then
+    break
+  fi
+  echo "Waiting for Kafka..."
   sleep 3
 done
 
