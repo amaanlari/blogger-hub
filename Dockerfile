@@ -31,4 +31,5 @@ EXPOSE 8080
 
 
 # Run the application
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=${SPRING_PROFILES_ACTIVE}"]
+ENTRYPOINT ["java", "-jar", "app.jar", "--spring.config.location=classpath:/,file:/etc/secrets/application-staging.yaml",
+"--spring.profiles.active=${SPRING_PROFILES_ACTIVE}"]
