@@ -82,6 +82,7 @@ public class BlogUserService implements UserDetailsService {
     blogUser.setCreatedAt(Instant.now());
     blogUser.setUpdatedAt(Instant.now());
 
+    log.info("Creating new user with email: {}", blogUser.getEmail());
     emailService.sendVerificationEmail(blogUser.getEmail());
     blogUserRepository.save(blogUser);
   }

@@ -42,7 +42,7 @@ public class EmailService {
   @Async
   public void sendVerificationEmail(String email) {
     // Generate OTP
-
+    log.info("Inside sendVerificationEmail - Sending OTP to {}", email);
     String otp = otpService.generateAndStoreOtp(email, otpTtl);
     redisService.set(email, otp, otpTtl);
 
@@ -62,6 +62,8 @@ public class EmailService {
       log.info("OTP verification email sent");
     } catch (Exception e) {
       log.error("Failed to send OTP to {}", email, e);
+      log.error("Error : ", e);
+      log.error("Error message {}: ", e.getMessage());
     }
   }
 
