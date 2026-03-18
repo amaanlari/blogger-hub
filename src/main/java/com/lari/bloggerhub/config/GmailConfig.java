@@ -12,10 +12,13 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 
 import java.io.File;
 import java.io.InputStream;
@@ -28,6 +31,7 @@ public class GmailConfig {
   private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
   private static final List<String> SCOPES =
       List.of(GmailScopes.GMAIL_SEND, GmailScopes.GMAIL_COMPOSE);
+  private static final Logger log = LoggerFactory.getLogger(GmailConfig.class);
 
   @Value("${spring.application.name}")
   private String applicationName;
@@ -45,7 +49,7 @@ public class GmailConfig {
   public Gmail gmailService() throws Exception {
     ApacheHttpTransport httpTransport = GoogleApacheHttpTransport.newTrustedTransport();
 
-    InputStream in = new ClassPathResource(credentialsFilePath).getInputStream();
+    InputStream in = new FileSystemResource(credentialsFilePath).getInputStream();
 
     GoogleClientSecrets clientSecrets =
         GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
