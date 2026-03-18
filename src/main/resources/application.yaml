@@ -69,7 +69,6 @@ gmail:
   credentials-file-path: ${CREDENTIALS_FILE_PATH:./credentials.json}
   tokens-directory-path: "tokens"
   redirect-port: 8888
-  application-name: "BloggerHub"
 
 aiven:
   basic:
