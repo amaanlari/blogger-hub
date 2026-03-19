@@ -67,8 +67,9 @@ otp:
 
 gmail:
   credentials-file-path: ${CREDENTIALS_FILE_PATH:./credentials.json}
-  tokens-directory-path: "tokens"
-  redirect-port: 8888
+  clientId: ${GMAIL_CLIENT_ID}
+  clientSecret: ${GMAIL_CLIENT_SECRET}
+  refreshToken: ${GMAIL_REFRESH_TOKEN}
 
 aiven:
   basic:

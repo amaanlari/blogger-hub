@@ -9,12 +9,14 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.UserCredentials;
 import com.lari.bloggerhub.constant.Constant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 
 import java.io.InputStream;
@@ -31,24 +33,25 @@ public class GmailConfig {
   @Value("${spring.application.name}")
   private String applicationName;
 
-  @Value("${gmail.credentials-file-path}")
-  private String credentialsFilePath;
+  @Value("${gmail.clientId}")
+  private String clientId;
 
-  @Value("${gmail.tokens-directory-path}")
-  private String tokensDirectoryPath;
+  @Value("${gmail.clientSecret}")
+  private String clientSecret;
 
-  @Value("${gmail.redirect-port}")
-  private int redirectPort;
+  @Value("${gmail.refreshToken}")
+  private String refreshToken;
 
   @Bean
   public Gmail gmailService() throws Exception {
     ApacheHttpTransport httpTransport = GoogleApacheHttpTransport.newTrustedTransport();
 
-    InputStream in = new FileSystemResource(credentialsFilePath).getInputStream();
-
-    GoogleCredentials credentials = GoogleCredentials.fromStream(in)
-            .createScoped(SCOPES)
-            .createDelegated(Constant.MAIL_SENDER);
+    // Build the credential using the refresh token
+    GoogleCredentials credentials = UserCredentials.newBuilder()
+            .setClientId(clientId)
+            .setClientSecret(clientSecret)
+            .setRefreshToken(refreshToken)
+            .build();
 
     HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
 
