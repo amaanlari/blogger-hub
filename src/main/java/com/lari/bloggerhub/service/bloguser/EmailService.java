@@ -102,7 +102,7 @@ public class EmailService {
 
       helper.setText(htmlContent, true);
       Message message = createMessageWithEmail(mimeMessage);
-      gmailService.users().messages().send("me", message).execute();
+      gmailService.users().messages().send(Constant.MAIL_SENDER, message).execute();
       log.info("OTP verification email sent");
     } catch (Exception e) {
       log.error("Failed to send OTP to {}", email, e);

@@ -1,28 +1,23 @@
 package com.lari.bloggerhub.config;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.apache.v2.GoogleApacheHttpTransport;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.apache.v2.ApacheHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.lari.bloggerhub.constant.Constant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 
-import java.io.File;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.List;
 
 @Configuration
@@ -51,21 +46,13 @@ public class GmailConfig {
 
     InputStream in = new FileSystemResource(credentialsFilePath).getInputStream();
 
-    GoogleClientSecrets clientSecrets =
-        GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
+    GoogleCredentials credentials = GoogleCredentials.fromStream(in)
+            .createScoped(SCOPES)
+            .createDelegated(Constant.MAIL_SENDER);
 
-    GoogleAuthorizationCodeFlow flow =
-        new GoogleAuthorizationCodeFlow.Builder(httpTransport, JSON_FACTORY, clientSecrets, SCOPES)
-            .setDataStoreFactory(new FileDataStoreFactory(new File(tokensDirectoryPath)))
-            .setAccessType("offline")
-            .build();
+    HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
 
-    Credential credential =
-        new AuthorizationCodeInstalledApp(
-                flow, new LocalServerReceiver.Builder().setPort(redirectPort).build())
-            .authorize("user");
-
-    return new Gmail.Builder(httpTransport, JSON_FACTORY, credential)
+    return new Gmail.Builder(httpTransport, JSON_FACTORY, requestInitializer)
         .setApplicationName(applicationName)
         .build();
   }
