@@ -13,9 +13,9 @@ spring:
       password: ${REDIS_PASSWORD:}
 
   kafka:
-    ssl:
-      trust-store-location: ${KAFKA_SSL_TRUSTSTORE_PATH}
-      key-store-location: ${KAFKA_SSL_KEYSTORE_PATH}
+#    ssl:
+#      trust-store-location: ${KAFKA_SSL_TRUSTSTORE_PATH}
+#      key-store-location: ${KAFKA_SSL_KEYSTORE_PATH}
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:blogger-hub-notifications}

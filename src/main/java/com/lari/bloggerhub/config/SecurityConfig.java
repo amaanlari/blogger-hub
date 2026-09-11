@@ -17,6 +17,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -106,6 +108,17 @@ public class SecurityConfig {
                     .requestMatchers("/api/auth/**", "/actuator/**")
                     .permitAll()
                     .requestMatchers(AUTH_WHITELIST)
+                    .permitAll()
+                    // Everything the backend actually protects lives under /api/**, and that is
+                    // untouched by this rule (it still falls through to .anyRequest()
+                    // .authenticated() below, same as before). This single addition exists only
+                    // to let anonymous visitors load the React app's static shell (index.html,
+                    // /assets/*.js, favicon) and directly navigate to a client-side route like
+                    // /posts/123 without the JwtFilter/AccessTokenEntryPoint 401'ing the page
+                    // load itself — required to serve the SPA at all, see SpaFallbackController
+                    // and docs/FRONTEND.md.
+                    .requestMatchers(
+                        new NegatedRequestMatcher(new AntPathRequestMatcher("/api/**")))
                     .permitAll()
                     .anyRequest()
                     .authenticated())

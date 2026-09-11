@@ -29,14 +29,14 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 @EnableKafka
 public class KafkaConfig {
 
-  @Value("${aiven.basic.auth.user.info}")
-  private String basicAuthUserInfo;
+//  @Value("${aiven.basic.auth.user.info}")
+//  private String basicAuthUserInfo;
 
-  @Value("${spring.kafka.ssl.trust-store-location}")
-  private String caPemLocation;
+//  @Value("${spring.kafka.ssl.trust-store-location}")
+//  private String caPemLocation;
 
-  @Value("${spring.kafka.ssl.key-store-location}")
-  private String svcPemLocation;
+//  @Value("${spring.kafka.ssl.key-store-location}")
+//  private String svcPemLocation;
 
   @Value("${spring.kafka.bootstrap-servers}")
   private String bootstrapServers;
@@ -56,14 +56,14 @@ public class KafkaConfig {
     configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
     configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
     configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
-    configProps.put("security.protocol", "SSL");
-    configProps.put("ssl.truststore.location", caPemLocation);
-    configProps.put("ssl.keystore.type", "PEM");
-    configProps.put("ssl.truststore.type", "PEM");
-    configProps.put("ssl.keystore.location", svcPemLocation);
-    configProps.put("schema.registry.url", "https://blogger-hub-stefansalvatorepvt-bb2d.d.aivencloud.com:10411");
-    configProps.put("basic.auth.credentials.source", "USER_INFO");
-    configProps.put("basic.auth.user.info","avnadmin:AVNS_j-jLFrzfYXWtLZ59VwQ");
+//    configProps.put("security.protocol", "SSL");
+//    configProps.put("ssl.truststore.location", caPemLocation);
+//    configProps.put("ssl.keystore.type", "PEM");
+//    configProps.put("ssl.truststore.type", "PEM");
+//    configProps.put("ssl.keystore.location", svcPemLocation);
+//    configProps.put("schema.registry.url", "https://blogger-hub-stefansalvatorepvt-bb2d.d.aivencloud.com:10411");
+//    configProps.put("basic.auth.credentials.source", "USER_INFO");
+//    configProps.put("basic.auth.user.info","avnadmin:AVNS_j-jLFrzfYXWtLZ59VwQ");
 
     return new DefaultKafkaProducerFactory<>(configProps);
   }
@@ -94,14 +94,14 @@ public class KafkaConfig {
     configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE,
             "com.lari.bloggerhub.dto.event.NotificationEvent");
     configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
-    configProps.put("security.protocol", "SSL");
-    configProps.put("ssl.truststore.location", caPemLocation);
-    configProps.put("ssl.keystore.type", "PEM");
-    configProps.put("ssl.truststore.type", "PEM");
-    configProps.put("ssl.keystore.location", svcPemLocation);
-    configProps.put("schema.registry.url", "https://blogger-hub-stefansalvatorepvt-bb2d.d.aivencloud.com:10411");
-    configProps.put("basic.auth.credentials.source", "USER_INFO");
-    configProps.put("basic.auth.user.info", "avnadmin:AVNS_j-jLFrzfYXWtLZ59VwQ");
+//    configProps.put("security.protocol", "SSL");
+//    configProps.put("ssl.truststore.location", caPemLocation);
+//    configProps.put("ssl.keystore.type", "PEM");
+//    configProps.put("ssl.truststore.type", "PEM");
+//    configProps.put("ssl.keystore.location", svcPemLocation);
+//    configProps.put("schema.registry.url", "https://blogger-hub-stefansalvatorepvt-bb2d.d.aivencloud.com:10411");
+//    configProps.put("basic.auth.credentials.source", "USER_INFO");
+//    configProps.put("basic.auth.user.info", "avnadmin:AVNS_j-jLFrzfYXWtLZ59VwQ");
 
     return new DefaultKafkaConsumerFactory<>(configProps);
   }
