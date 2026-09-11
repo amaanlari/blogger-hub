@@ -11,11 +11,17 @@ spring:
       port: ${REDIS_PORT}
       username: ${REDIS_USERNAME:}
       password: ${REDIS_PASSWORD:}
-
+      ssl:
+        enabled: true
   kafka:
-#    ssl:
-#      trust-store-location: ${KAFKA_SSL_TRUSTSTORE_PATH}
+    ssl:
+      trust-store-location: ${KAFKA_SSL_TRUSTSTORE_PATH}
 #      key-store-location: ${KAFKA_SSL_KEYSTORE_PATH}
+    properties:
+      security.protocol: SASL_SSL
+      sasl.mechanism: SCRAM-SHA-256
+      ssl.truststore.type: PEM
+      sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="avnadmin" password="${AIVEN_KAFKA_PASSWORD}";
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:blogger-hub-notifications}
@@ -76,11 +82,3 @@ gmail:
   clientId: ${GMAIL_CLIENT_ID}
   clientSecret: ${GMAIL_CLIENT_SECRET}
   refreshToken: ${GMAIL_REFRESH_TOKEN}
-
-aiven:
-  basic:
-    auth:
-      user:
-        # Only used by the (currently commented-out) Aiven SSL wiring in KafkaConfig; the
-        # default keeps it from becoming a required env var on deployments with a local broker.
-        info: ${AIVEN_BASIC_AUTH_USER_INFO:}
