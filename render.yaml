@@ -7,6 +7,10 @@
 #   Redis    -> Redis Cloud    Media -> Cloudinary
 #
 # The container therefore runs one process and needs no disk, no sidecar and no internal ports.
+# The whole build and run recipe lives in the Dockerfile; there is no entrypoint script.
+#
+# This file is a convenience, not a requirement: you can equally create the service by hand in the
+# dashboard (New -> Web Service -> Docker) and set the same variables there.
 #
 # To deploy: push this file, then Render Dashboard -> New -> Blueprint -> pick this repo.
 #
@@ -15,14 +19,14 @@
 # ---------------------------------------------------------------------------------------------
 #   ca.pem                     The Aiven CA certificate (Aiven console -> Kafka service ->
 #                              "CA Certificate"). Required: the Kafka client will not connect
-#                              without it, and start.sh aborts early if it is missing.
+#                              without it. The path is preset in the Dockerfile.
 #
 #   application-staging.yaml   Optional but recommended. Upload your local
 #                              src/main/resources/application-staging.yaml verbatim and every
-#                              `sync: false` var below can be left unset — start.sh layers the
-#                              file on top of the JAR's application.yaml. One upload instead of
-#                              fifteen dashboard fields, and nothing sensitive is ever typed
-#                              into (or stored by) the Blueprint.
+#                              `sync: false` var below can be left unset — the Dockerfile points
+#                              SPRING_CONFIG_ADDITIONAL_LOCATION at it, so Spring layers it on top
+#                              of the JAR's application.yaml. One upload instead of fifteen
+#                              dashboard fields, and nothing sensitive is typed into the Blueprint.
 #
 # Env vars still win over the secret file, so you can override a single value from the dashboard
 # without re-uploading.
