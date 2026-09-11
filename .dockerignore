@@ -1,0 +1,44 @@
+# Build context hygiene. Everything here either bloats the image, breaks the build by
+# shadowing what the container generates, or is a secret that must never be baked into a
+# layer (image layers are readable by anyone who can pull the image).
+
+# --- Git / IDE / OS ---
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+.junie
+.claude
+.mcp.json
+*.iml
+
+# --- Build output (regenerated inside the builder stage) ---
+target/
+frontend/dist/
+src/main/resources/static/*
+!src/main/resources/static/.gitkeep
+
+# --- Toolchains (~400MB, re-fetched by frontend-maven-plugin / npm ci) ---
+frontend/node/
+frontend/node_modules/
+frontend/*.tsbuildinfo
+
+# --- Local-only compose / scripting, not used by the Render image ---
+docker-compose.yaml
+dev-container.env
+run-local.sh
+
+# --- Docs ---
+docs/
+*.md
+
+# --- SECRETS: these sit under src/ and would otherwise be packaged into the JAR ---
+# Real values belong in Render env vars or a Render Secret File, never in an image layer.
+src/main/resources/application-dev.yaml
+src/main/resources/application-dev-container.yaml
+src/main/resources/application-staging.yaml
+src/main/resources/credentials.json
+src/main/resources/certs/
+tokens/
+*.pem

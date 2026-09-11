@@ -81,4 +81,6 @@ aiven:
   basic:
     auth:
       user:
-        info: ${AIVEN_BASIC_AUTH_USER_INFO}
+        # Only used by the (currently commented-out) Aiven SSL wiring in KafkaConfig; the
+        # default keeps it from becoming a required env var on deployments with a local broker.
+        info: ${AIVEN_BASIC_AUTH_USER_INFO:}
