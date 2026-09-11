@@ -46,3 +46,4 @@ frontend/node/
 # Never hand-edit or commit generated files here.
 src/main/resources/static/*
 !src/main/resources/static/.gitkeep
+/src/main/resources/certs/*
