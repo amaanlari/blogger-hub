@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Blogger Hub">
+  <rect width="64" height="64" rx="14" fill="#171717"/>
+  <g fill="#ffffff" fill-rule="evenodd">
+    <path d="M9.5 14 H21.5 A9 9 0 0 1 21.5 32 A9 9 0 0 1 21.5 50 H9.5 Z
+             M15.5 19.5 H20.375 A4.625 4.625 0 0 1 20.375 28.75 H15.5 Z
+             M15.5 34.75 H20.125 A4.875 4.875 0 0 1 20.125 44.5 H15.5 Z"/>
+    <path d="M34.5 14 H40.5 V28.75 H48.5 V14 H54.5 V50 H48.5 V34.75 H40.5 V50 H34.5 Z"/>
+  </g>
+</svg>

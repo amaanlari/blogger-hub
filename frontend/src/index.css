@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 83%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+/**
+ * The reading column. Medium's whole visual argument is that body text deserves a serif, a
+ * generous measure and real leading — so post bodies opt into this rather than inheriting the
+ * UI's sans stack.
+ */
+@layer components {
+  .prose-article {
+    @apply font-serif text-[1.125rem] leading-[1.8] text-foreground;
+  }
+
+  .prose-article > * + * {
+    @apply mt-6;
+  }
+
+  .prose-article h1 {
+    @apply font-sans text-3xl font-bold leading-tight mt-10;
+  }
+
+  .prose-article h2 {
+    @apply font-sans text-2xl font-bold leading-tight mt-10;
+  }
+
+  .prose-article h3 {
+    @apply font-sans text-xl font-semibold leading-snug mt-8;
+  }
+
+  .prose-article a {
+    @apply underline underline-offset-4 decoration-muted-foreground hover:decoration-foreground;
+  }
+
+  .prose-article blockquote {
+    @apply border-l-2 border-border pl-5 italic text-muted-foreground;
+  }
+
+  .prose-article ul {
+    @apply list-disc pl-6 space-y-2;
+  }
+
+  .prose-article ol {
+    @apply list-decimal pl-6 space-y-2;
+  }
+
+  .prose-article img {
+    @apply rounded-lg w-full;
+  }
+
+  .prose-article code {
+    @apply font-mono text-[0.875em] bg-muted px-1.5 py-0.5 rounded;
+  }
+
+  .prose-article pre {
+    @apply rounded-lg overflow-x-auto text-sm;
+  }
+
+  .prose-article pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .prose-article hr {
+    @apply my-10 border-border;
+  }
+
+  /* GitHub-flavoured tables arrive via remark-gfm. Without these they render as unstyled cells
+     running into each other, which reads as "the markdown did not render". */
+  .prose-article table {
+    @apply w-full border-collapse font-sans text-sm;
+  }
+
+  .prose-article th,
+  .prose-article td {
+    @apply border border-border px-3 py-2 text-left align-top;
+  }
+
+  .prose-article th {
+    @apply bg-muted font-semibold;
+  }
+
+  .prose-article table + * {
+    @apply mt-6;
+  }
+}

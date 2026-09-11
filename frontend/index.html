@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- SVG first: every current browser prefers it and it stays crisp at any size. The 32px PNG
+         is the fallback for anything that cannot use one. The touch icon is full-bleed on purpose —
+         iOS applies its own rounded mask, so a pre-rounded image leaves wedges behind it. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#171717" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blogger Hub</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
