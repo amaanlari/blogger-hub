@@ -1,14 +1,34 @@
 # Render Blueprint — https://render.com/docs/blueprint-spec
 #
-# Deploys Blogger Hub as a single Docker web service. The image bundles a single-node Kafka
-# broker (KRaft) next to the Spring Boot app, because a Render web service is one container and
-# Render has no managed Kafka.
+# Deploys Blogger Hub as a single Docker web service running the `staging` profile. Every backing
+# service is managed and external:
 #
-# MongoDB, Redis and Cloudinary stay external (Atlas / Redis Cloud / Cloudinary) — their
-# connection details come in as environment variables below.
+#   MongoDB  -> Atlas          Kafka -> Aiven (SASL_SSL / SCRAM-SHA-256)
+#   Redis    -> Redis Cloud    Media -> Cloudinary
 #
-# To deploy: push this file to the repo, then Render Dashboard → New → Blueprint → pick the repo.
-# Every `sync: false` var is prompted for at creation time and never stored in git.
+# The container therefore runs one process and needs no disk, no sidecar and no internal ports.
+#
+# To deploy: push this file, then Render Dashboard -> New -> Blueprint -> pick this repo.
+#
+# ---------------------------------------------------------------------------------------------
+# BEFORE THE FIRST DEPLOY — two Secret Files (Dashboard -> service -> Environment -> Secret Files)
+# ---------------------------------------------------------------------------------------------
+#   ca.pem                     The Aiven CA certificate (Aiven console -> Kafka service ->
+#                              "CA Certificate"). Required: the Kafka client will not connect
+#                              without it, and start.sh aborts early if it is missing.
+#
+#   application-staging.yaml   Optional but recommended. Upload your local
+#                              src/main/resources/application-staging.yaml verbatim and every
+#                              `sync: false` var below can be left unset — start.sh layers the
+#                              file on top of the JAR's application.yaml. One upload instead of
+#                              fifteen dashboard fields, and nothing sensitive is ever typed
+#                              into (or stored by) the Blueprint.
+#
+# Env vars still win over the secret file, so you can override a single value from the dashboard
+# without re-uploading.
+#
+# Also whitelist Render's outbound IPs in Atlas (Network Access) and Aiven (Allowed IP addresses),
+# or allow 0.0.0.0/0 on both.
 
 services:
   - type: web
@@ -16,42 +36,37 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    region: singapore          # nearest to the existing ap-south-1 Redis; also: oregon, frankfurt, ohio, virginia
-    plan: 1c-2g                # 1 CPU / 2GB. Two JVMs in one container do not fit the 512MB plans.
+    region: singapore          # nearest to the ap-south-1 Redis / Aiven cluster; also: oregon, frankfurt, ohio, virginia
+    plan: starter              # 512MB. Bump to `standard` if you see the JVM get OOM-killed.
     branch: main
-    # Kafka takes ~30-60s to format storage and become ready before Spring Boot even starts, so
-    # the first successful health check on a cold deploy lands noticeably later than for a plain
-    # Boot service. Render keeps probing until the deploy timeout, so this is fine — just don't
-    # be alarmed by a minute of "service unavailable" in the logs.
     healthCheckPath: /actuator/health
 
     envVars:
-      # --- JVM / container sizing -------------------------------------------------------------
-      # Budgeted for the 2GB plan: 512MB Kafka heap + ~800MB app heap + metaspace/stacks/page
-      # cache. Raise both together if you move to 2c-4g.
-      - key: KAFKA_HEAP_OPTS
-        value: -Xms256m -Xmx512m
+      # --- Profile & JVM ----------------------------------------------------------------------
+      - key: SPRING_PROFILES_ACTIVE
+        value: staging
+      # MaxRAMPercentage rather than a fixed -Xmx so the same image is correct on any plan.
       - key: JAVA_OPTS
-        value: -XX:+UseContainerSupport -XX:MaxRAMPercentage=45 -XX:+ExitOnOutOfMemoryError
+        value: -XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
 
-      # --- Kafka ------------------------------------------------------------------------------
-      # The app reaches the broker over loopback inside the same container.
+      # --- Kafka (Aiven) ------------------------------------------------------------------------
+      # Path to the uploaded Secret File; Render mounts secret files at /etc/secrets/<filename>.
+      - key: KAFKA_SSL_TRUSTSTORE_PATH
+        value: /etc/secrets/ca.pem
       - key: KAFKA_BOOTSTRAP_SERVERS
-        value: 127.0.0.1:9092
+        sync: false            # e.g. blogger-hub-<project>.aivencloud.com:10419
+      - key: AIVEN_KAFKA_PASSWORD
+        sync: false            # the avnadmin SCRAM password
       - key: KAFKA_TOPIC_NOTIFICATIONS
         value: blogger-hub-notifications
       - key: KAFKA_CONSUMER_GROUP_ID
-        value: blogger-hub-notifications
-      # Must stay constant for the life of the service if you attach a disk (see below).
-      - key: KAFKA_CLUSTER_ID
-        value: MkU3OEVBNTcwNTJENDM2Qk
+        value: blogger-hub-notifications-consumer
 
       # --- MongoDB (Atlas) ----------------------------------------------------------------------
-      # Whitelist Render's outbound IPs in Atlas → Network Access, or allow 0.0.0.0/0.
       - key: MONGODB_URI
         sync: false
 
-      # --- Redis ------------------------------------------------------------------------------
+      # --- Redis --------------------------------------------------------------------------------
       - key: REDIS_HOST
         sync: false
       - key: REDIS_PORT
@@ -63,9 +78,9 @@ services:
       - key: OTP_TTL
         value: "5"
 
-      # --- JWT --------------------------------------------------------------------------------
-      # Generate fresh values for production: `openssl rand -hex 64`. Do not reuse the ones
-      # currently sitting in application-staging.yaml — they have been on disk in plain text.
+      # --- JWT ----------------------------------------------------------------------------------
+      # Generate fresh values before going public: `openssl rand -hex 128`. Do not reuse the ones
+      # in application-staging.yaml — they have been sitting in plain text on disk.
       - key: ACCESS_TOKEN_SECRET
         sync: false
       - key: REFRESH_TOKEN_SECRET
@@ -75,7 +90,7 @@ services:
       - key: REFRESH_TOKEN_EXPIRATION_DAYS
         value: "7"
 
-      # --- Cloudinary -------------------------------------------------------------------------
+      # --- Cloudinary ---------------------------------------------------------------------------
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
@@ -85,7 +100,7 @@ services:
       - key: CLOUDINARY_DEFAULT_PROFILE_PIC
         sync: false
 
-      # --- Mail (SMTP) ------------------------------------------------------------------------
+      # --- Mail (SMTP) --------------------------------------------------------------------------
       - key: MAIL_HOST
         value: smtp.gmail.com
       - key: MAIL_PORT
@@ -95,24 +110,10 @@ services:
       - key: MAIL_PASSWORD
         sync: false
 
-      # --- Gmail API --------------------------------------------------------------------------
+      # --- Gmail API ----------------------------------------------------------------------------
       - key: GMAIL_CLIENT_ID
         sync: false
       - key: GMAIL_CLIENT_SECRET
         sync: false
       - key: GMAIL_REFRESH_TOKEN
         sync: false
-
-    # --- Optional: persistent Kafka log ----------------------------------------------------------
-    # Without a disk the broker's log is ephemeral: every deploy and every restart starts from an
-    # empty topic and loses consumer offsets. For a notification bus whose events are consumed
-    # within seconds that is usually fine, and it keeps zero-downtime deploys working.
-    #
-    # If you do want the log to survive restarts, uncomment this AND read the note in
-    # docs/RENDER_DEPLOYMENT.md about disk ownership vs. the image's non-root user. Attaching a
-    # disk also disables zero-downtime deploys and pins the service to one instance.
-    #
-    # disk:
-    #   name: kafka-data
-    #   mountPath: /var/lib/kafka/data
-    #   sizeGB: 5

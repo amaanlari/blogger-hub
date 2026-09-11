@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 
-# Single-container image for Render: an embedded single-node Kafka broker (KRaft mode) plus the
-# Spring Boot app (which already has the React SPA baked into its JAR). Render web services run
-# exactly one container, so the broker has to live alongside the app rather than beside it.
+# Single-container image for Render, built for the `staging` profile: MongoDB (Atlas), Kafka
+# (Aiven) and Redis are all managed services reached over TLS, so the container runs exactly one
+# process — the Spring Boot app, which already has the React SPA compiled into its JAR.
 #
-# Kafka listens on loopback only and is never exposed publicly; the only port Render routes to is
-# the app's $PORT.
+# Nothing secret is baked in. Credentials arrive at runtime either as Render environment
+# variables or as Render Secret Files under /etc/secrets (see start.sh and render.yaml).
 
 # ---------------------------------------------------------------------------------------------
 # Stage 1: build the fat JAR (Maven drives the Vite build via frontend-maven-plugin)
@@ -28,23 +28,11 @@ RUN ./mvnw -B clean package -DskipTests \
     && mv target/blogger-hub-*.jar /build/app.jar
 
 # ---------------------------------------------------------------------------------------------
-# Stage 2: runtime — JRE + Kafka distribution + the JAR
+# Stage 2: runtime — JRE + the JAR
 # ---------------------------------------------------------------------------------------------
 FROM eclipse-temurin:21-jre-jammy AS runtime
 
-# Copied straight out of the official Apache image rather than curl'd at build time: the version
-# is pinned by the image tag and there's no network dependency during the Render build.
-COPY --from=apache/kafka:3.9.1 /opt/kafka /opt/kafka
-
-ENV KAFKA_HOME=/opt/kafka \
-    KAFKA_DATA_DIR=/var/lib/kafka/data \
-    PATH="/opt/kafka/bin:${PATH}"
-
-# site-docs is ~20MB of HTML the broker never reads.
-RUN rm -rf /opt/kafka/site-docs \
-    && useradd --create-home --shell /bin/bash spring \
-    && mkdir -p "${KAFKA_DATA_DIR}" \
-    && chown -R spring:spring "${KAFKA_DATA_DIR}" /opt/kafka
+RUN useradd --create-home --shell /bin/bash spring
 
 WORKDIR /app
 
@@ -54,11 +42,8 @@ RUN chmod +x ./start.sh
 
 USER spring
 
-# Heap budgets have to be set explicitly: two JVMs share one container, and Kafka's shipped
-# default is a 1GB heap that would starve the app. These suit Render's 2GB (1c-2g) plan and can
-# be overridden with env vars on smaller or larger instances.
-ENV KAFKA_HEAP_OPTS="-Xms256m -Xmx512m" \
-    JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=45 -XX:+ExitOnOutOfMemoryError"
+ENV SPRING_PROFILES_ACTIVE=staging \
+    JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
 
 # Documentation only — Render routes to whatever $PORT the process binds, and application.yaml
 # already reads `server.port: ${PORT:8080}`.
