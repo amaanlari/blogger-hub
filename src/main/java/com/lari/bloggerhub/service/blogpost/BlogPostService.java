@@ -5,6 +5,7 @@ import com.lari.bloggerhub.document.BlogPost;
 import com.lari.bloggerhub.document.BlogUser;
 import com.lari.bloggerhub.dto.request.BlogPostRequestDto;
 import com.lari.bloggerhub.dto.response.BlogPostResponseDto;
+import com.lari.bloggerhub.dto.response.BlogPostSummaryDto;
 import com.lari.bloggerhub.dto.response.BlogUserRef;
 import com.lari.bloggerhub.enums.Role;
 import com.lari.bloggerhub.repository.BlogPostRepository;
@@ -16,13 +17,19 @@ import com.lari.bloggerhub.response.SuccessResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class BlogPostService {
@@ -72,6 +79,66 @@ public class BlogPostService {
     }
     return ResponseEntity.ok(
         new DataResponse(true, HttpStatus.OK.value(), "Blog post found successfully.", blogPost));
+  }
+
+  /**
+   * Paginated, newest-first list of every post, optionally filtered by a search term matched against
+   * title and description. Backs the home feed and the explore/search page.
+   *
+   * <p>Returns {@link BlogPostSummaryDto}, which carries no {@code content} — see that class for why
+   * that matters for the premium paywall, and why it makes this endpoint safe to serve anonymously.
+   *
+   * <p>The pagination envelope deliberately mirrors {@code NotificationService.getNotifications} —
+   * a raw map with camelCase {@code totalElements}/{@code totalPages} keys — so the frontend parses
+   * one pagination shape across the whole API rather than two.
+   *
+   * @param page zero-based page index
+   * @param size page size
+   * @param q optional search term; blank or null lists everything
+   * @return response with {@code posts} and {@code pagination}
+   */
+  public ResponseEntity<Response> listBlogPosts(int page, int size, String q) {
+    Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+    Page<BlogPost> postPage;
+    if (q == null || q.isBlank()) {
+      postPage = blogPostRepository.findAll(pageable);
+    } else {
+      postPage =
+          blogPostRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+              q.trim(), q.trim(), pageable);
+    }
+
+    List<BlogPostSummaryDto> posts =
+        postPage.getContent().stream().map(this::toSummaryDto).toList();
+
+    Map<String, Object> responseData = new HashMap<>();
+    responseData.put("posts", posts);
+    responseData.put(
+        "pagination",
+        Map.of(
+            "page", page,
+            "size", size,
+            "totalElements", postPage.getTotalElements(),
+            "totalPages", postPage.getTotalPages()));
+
+    return ResponseEntity.ok(
+        new DataResponse(true, HttpStatus.OK.value(), "Blog posts fetched successfully", responseData));
+  }
+
+  /**
+   * Flattens a post into its summary projection, resolving the {@link BlogUserRef} author reference
+   * down to a plain username string.
+   *
+   * <p>The null guard is not defensive padding: {@code createdBy} is a {@code @DocumentReference},
+   * so a post whose author document was deleted resolves to null here, and a hard-deleted user
+   * leaves exactly that behind (nothing cascades author deletion to their posts).
+   */
+  private BlogPostSummaryDto toSummaryDto(BlogPost blogPost) {
+    BlogPostSummaryDto dto = new BlogPostSummaryDto();
+    BeanUtils.copyProperties(blogPost, dto);
+    dto.setCreatedBy(blogPost.getCreatedBy() != null ? blogPost.getCreatedBy().getUsername() : null);
+    return dto;
   }
 
   public ResponseEntity<Response> getAllBlogPostsByUserId(String userId) {

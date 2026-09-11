@@ -27,6 +27,23 @@ public class BlogPostController {
     this.blogPostService = blogPostService;
   }
 
+  /**
+   * Paginated, newest-first feed of all posts, with optional search. Public — see
+   * {@code SecurityConfig.AUTH_WHITELIST} and {@link
+   * com.lari.bloggerhub.dto.response.BlogPostSummaryDto} for why serving this anonymously does not
+   * leak premium content.
+   *
+   * <p>Mapped on the collection root, so it never collides with the single-segment
+   * {@code /{username}} mapping below.
+   */
+  @GetMapping
+  public ResponseEntity<Response> listBlogPosts(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size,
+      @RequestParam(required = false) String q) {
+    return blogPostService.listBlogPosts(page, size, q);
+  }
+
   @GetMapping("/{username}")
   public ResponseEntity<Response> getBlogPostsByUsername(@PathVariable String username) {
     return blogPostService.getAllBlogPostsByUsername(username);

@@ -28,6 +28,14 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<!-- Pinned so every developer/CI machine downloads the exact same toolchain instead of
+		     relying on whatever Node happens to be on PATH. Bump alongside frontend/package.json
+		     if the frontend's minimum Node requirement ever changes. -->
+		<node.version>v22.13.1</node.version>
+		<npm.version>10.9.2</npm.version>
+		<!-- `mvn clean package -DskipFrontend=true` skips the React build entirely, for
+		     backend-only iteration or CI stages that don't need the SPA rebuilt. -->
+		<skipFrontend>false</skipFrontend>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -131,7 +139,59 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+			<!--
+			  Builds the React app in frontend/ and drops the compiled output straight into
+			  src/main/resources/static/ (see frontend/vite.config.ts's `build.outDir`) before the
+			  standard Maven resource-copying phase runs, so the SPA ends up packaged inside the
+			  same executable JAR as the Spring Boot app. Node/npm are downloaded into
+			  frontend/node_modules/.cache — no machine-wide Node install is required or touched.
+			  `npm ci` (not `npm install`) is used so the build is 100% reproducible from
+			  frontend/package-lock.json.
+			-->
+			<plugin>
+				<groupId>com.github.eirslett</groupId>
+				<artifactId>frontend-maven-plugin</artifactId>
+				<version>1.15.1</version>
+				<configuration>
+					<workingDirectory>frontend</workingDirectory>
+				</configuration>
+				<executions>
+					<execution>
+						<id>install-node-and-npm</id>
+						<goals>
+							<goal>install-node-and-npm</goal>
+						</goals>
+						<configuration>
+							<nodeVersion>${node.version}</nodeVersion>
+							<npmVersion>${npm.version}</npmVersion>
+							<skip>${skipFrontend}</skip>
+						</configuration>
+					</execution>
+					<execution>
+						<id>npm-ci</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>ci</arguments>
+							<skip>${skipFrontend}</skip>
+						</configuration>
+					</execution>
+					<execution>
+						<id>npm-build</id>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>run build</arguments>
+							<skip>${skipFrontend}</skip>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
 </project>
+<!--		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-->

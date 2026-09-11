@@ -7,6 +7,7 @@ import com.lari.bloggerhub.response.ErrorResponse;
 import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.service.bloguser.BlogUserService;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +74,27 @@ public class BlogUserController {
       @PathVariable String userId, Authentication authentication) {
     var isAuthorized = checkUserId(userId, authentication);
     return isAuthorized != null ? isAuthorized : blogUserService.getUserById(userId);
+  }
+
+  /**
+   * Resolves a batch of user IDs to their public profiles in one round trip.
+   *
+   * <p>This exists because comments store only a {@code user_id} and there is otherwise no way for a
+   * client to turn that into a name or an avatar: {@code /id/{userId}} above is self-only, and
+   * {@code /{username}} takes a username, not an ID. Without this, rendering a comment thread is
+   * impossible — not merely slow.
+   *
+   * <p>Unknown IDs are skipped rather than erroring, so a thread containing a comment from a
+   * since-deleted account still renders. Public: no token needed, and already covered by the
+   * single-segment {@code /api/users/{username}} whitelist entry, which this literal mapping takes
+   * precedence over.
+   *
+   * @param ids comma-separated user IDs
+   * @return a {@link ResponseEntity} containing the matching public profiles
+   */
+  @GetMapping("/lookup")
+  public ResponseEntity<Response> lookupUsers(@RequestParam List<String> ids) {
+    return blogUserService.lookupUsers(ids);
   }
 
   /**

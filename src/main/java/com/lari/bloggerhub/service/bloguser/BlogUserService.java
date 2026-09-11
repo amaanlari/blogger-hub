@@ -6,6 +6,7 @@ import com.lari.bloggerhub.document.BlogUser;
 import com.lari.bloggerhub.dto.request.UpdateBlogUserRequestDto;
 import com.lari.bloggerhub.dto.request.auth.SignupRequestDto;
 import com.lari.bloggerhub.dto.response.BlogUserResponseDto;
+import com.lari.bloggerhub.dto.response.PublicUserDto;
 import com.lari.bloggerhub.repository.BlogUserRepository;
 import com.lari.bloggerhub.response.DataResponse;
 import com.lari.bloggerhub.response.ErrorResponse;
@@ -40,6 +41,10 @@ import org.springframework.web.multipart.MultipartFile;
 public class BlogUserService implements UserDetailsService {
 
   private static final Logger log = LoggerFactory.getLogger(BlogUserService.class);
+
+  /** Upper bound on {@link #lookupUsers(List)}; comfortably above any realistic comment thread. */
+  private static final int MAX_USER_LOOKUP_BATCH = 100;
+
   private final BlogUserRepository blogUserRepository;
   private final Cloudinary cloudinary;
   private final PasswordEncoder passwordEncoder;
@@ -130,6 +135,52 @@ public class BlogUserService implements UserDetailsService {
             user.getRoles());
     return ResponseEntity.ok(
         new DataResponse(true, HttpStatus.OK.value(), "User found.", responseDto));
+  }
+
+  /**
+   * Resolves a batch of user IDs to their public profiles, skipping any that no longer exist.
+   *
+   * <p>Skipping rather than throwing is deliberate: the caller is typically rendering a comment
+   * thread, and one deleted account should not blank out the whole thread. The client is expected to
+   * fall back to a placeholder byline for any ID missing from the result.
+   *
+   * <p>The batch is capped so that a hand-crafted query string cannot turn one public, unauthenticated
+   * request into an unbounded dump of the user collection.
+   *
+   * @param ids the user IDs to resolve
+   * @return a response entity containing the matching public profiles
+   */
+  public ResponseEntity<Response> lookupUsers(List<String> ids) {
+    if (ids == null || ids.isEmpty()) {
+      return ResponseEntity.ok(
+          new DataResponse(true, HttpStatus.OK.value(), "Users found.", List.of()));
+    }
+    if (ids.size() > MAX_USER_LOOKUP_BATCH) {
+      return ResponseEntity.badRequest()
+          .body(
+              new ErrorResponse(
+                  false,
+                  HttpStatus.BAD_REQUEST.value(),
+                  "Too many ids requested. Maximum is " + MAX_USER_LOOKUP_BATCH + ".",
+                  null));
+    }
+
+    List<PublicUserDto> users =
+        blogUserRepository.findAllById(ids).stream()
+            .map(
+                user -> {
+                  PublicUserDto dto = new PublicUserDto();
+                  dto.setId(user.getId());
+                  dto.setUsername(user.getUsername());
+                  dto.setBio(user.getBio());
+                  dto.setProfilePicture(user.getProfilePicture());
+                  dto.setRoles(user.getRoles());
+                  return dto;
+                })
+            .toList();
+
+    return ResponseEntity.ok(
+        new DataResponse(true, HttpStatus.OK.value(), "Users found.", users));
   }
 
   /**

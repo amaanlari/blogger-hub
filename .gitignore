@@ -33,3 +33,16 @@ build/
 .vscode/
 
 *.pem
+
+### Frontend (React/Vite) ###
+frontend/node_modules/
+frontend/dist/
+# The project-local Node/npm toolchain that frontend-maven-plugin downloads into frontend/node
+# (~135MB). Pinned by node.version in pom.xml and re-fetched on demand, so it must never be
+# committed.
+frontend/node/
+
+# Generated production build output — produced by `npm run build` / `mvn package`.
+# Never hand-edit or commit generated files here.
+src/main/resources/static/*
+!src/main/resources/static/.gitkeep

@@ -12,6 +12,7 @@ import com.lari.bloggerhub.response.Response;
 import com.lari.bloggerhub.service.notification.KafkaNotificationProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -104,12 +105,19 @@ public class CommentsService {
         new DataResponse(true, HttpStatus.OK.value(), "Comment removed successfully", comment));
   }
 
+  /**
+   * Every comment on a post, oldest first, as one flat list. Replies are identified by their
+   * {@code parent_id} and are threaded by the client rather than nested here.
+   *
+   * <p>The explicit sort matters: without it the order is Mongo's natural order, which is not
+   * stable, so a conversation could reshuffle itself between two reads of the same page.
+   */
   public ResponseEntity<Response> getCommentsByPostId(String postId) {
     return ResponseEntity.ok(
         new DataResponse(
             true,
             HttpStatus.OK.value(),
             "Comments retrieved successfully",
-            commentsRepository.findCommentsByPostId((postId))));
+            commentsRepository.findCommentsByPostId(postId, Sort.by("createdAt").ascending())));
   }
 }

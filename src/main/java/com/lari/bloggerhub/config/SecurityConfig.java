@@ -43,6 +43,12 @@ public class SecurityConfig {
     "/swagger-ui/**",
     "/api/auth/**",
     "/api/users/{username}",
+    // The paginated feed/search list. Public so anonymous visitors can browse before signing up.
+    // Safe to expose because it serves BlogPostSummaryDto, which carries no post content — unlike
+    // /api/blogposts/{username}, which returns full content for premium posts and therefore stays
+    // authenticated. Exact path only: the single-segment /{username} listing below it is not
+    // matched by this entry.
+    "/api/blogposts",
     "/actuator/**"
   };
 

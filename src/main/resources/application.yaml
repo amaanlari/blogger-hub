@@ -43,6 +43,12 @@ spring:
             enable: true
   jackson:
     property-naming-strategy: SNAKE_CASE
+  servlet:
+    multipart:
+      # Boot's defaults (1MB per file, 10MB per request) reject most photos straight off a phone,
+      # which is the common case for both post banners and avatars.
+      max-file-size: 5MB
+      max-request-size: 10MB
 
 jwt:
   auth:
