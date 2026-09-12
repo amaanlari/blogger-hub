@@ -1,16 +1,5 @@
 # syntax=docker/dockerfile:1
 
-# Blogger Hub — everything in one Dockerfile.
-#
-# Build:  Maven compiles the Java app and, via frontend-maven-plugin, runs the React/Vite build
-#         whose output lands in src/main/resources/static/ — so the SPA is packaged inside the
-#         same executable JAR.
-# Run:    one process, `java -jar`. MongoDB (Atlas), Kafka (Aiven) and Redis are managed services
-#         reached over TLS, so there is nothing else to start.
-#
-# No secrets are baked in; see .dockerignore. Credentials arrive at runtime as environment
-# variables, or as a Render Secret File (see SPRING_CONFIG_ADDITIONAL_LOCATION below).
-
 # ---------------------------------------------------------------------------------------------
 # Stage 1 — build the fat JAR (Java + React)
 # ---------------------------------------------------------------------------------------------
@@ -53,12 +42,11 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOf
 
 # The Aiven CA certificate the Kafka client validates the broker against. A public certificate,
 # not a credential, but it is uploaded as a Secret File alongside the config above.
-ENV KAFKA_SSL_TRUSTSTORE_PATH=/app/certs/ca.pem
+ENV KAFKA_SSL_TRUSTSTORE_PATH=/app/ca.pem
 
 # Documentation only — Render routes to whatever $PORT the process binds, and application.yaml
 # already reads `server.port: ${PORT:8080}`.
 EXPOSE 8080
 
-# `exec` so the JVM is PID 1 and receives SIGTERM directly, letting Spring Boot shut down
-# gracefully. `sh -c` is what word-splits $JAVA_OPTS into separate JVM flags.
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+# 2. Extract the Vercel secret variable to the file right before booting Java
+ENTRYPOINT ["sh", "-c", "echo \"$KAFKA_CA_CERT\" > /app/ca.pem && exec java $JAVA_OPTS -jar /app/app.jar"]
