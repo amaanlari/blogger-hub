@@ -39,21 +39,21 @@ FROM eclipse-temurin:21-jre-jammy AS runtime
 RUN useradd --create-home --shell /bin/bash spring
 
 WORKDIR /app
+
+# 1. Create a local certs folder inside the app directory
+RUN mkdir -p /app/certs
+
+# 2. Copy the ca.pem file from your repository and set ownership to 'spring'
+COPY --chown=spring:spring ca.pem /app/certs/ca.pem
 COPY --from=builder --chown=spring:spring /build/app.jar ./app.jar
+
 USER spring
 
-ENV SPRING_PROFILES_ACTIVE=staging \
-    JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
-
-# Render mounts Secret Files at /etc/secrets/<filename>. Spring reads this variable itself, so all
-# credentials can be supplied as one uploaded YAML instead of ~15 dashboard fields. `optional:`
-# means the app still starts fine when the file isn't there and everything comes from env vars.
-# Plain environment variables override the file either way.
-ENV SPRING_CONFIG_ADDITIONAL_LOCATION=optional:file:/etc/secrets/application-staging.yaml
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
 
 # The Aiven CA certificate the Kafka client validates the broker against. A public certificate,
 # not a credential, but it is uploaded as a Secret File alongside the config above.
-ENV KAFKA_SSL_TRUSTSTORE_PATH=/etc/secrets/ca.pem
+ENV KAFKA_SSL_TRUSTSTORE_PATH=/app/certs/ca.pem
 
 # Documentation only — Render routes to whatever $PORT the process binds, and application.yaml
 # already reads `server.port: ${PORT:8080}`.
