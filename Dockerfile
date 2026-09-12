@@ -28,8 +28,7 @@ WORKDIR /app
 COPY --from=builder --chown=spring:spring /build/app.jar ./app.jar
 USER spring
 
-ENV SPRING_PROFILES_ACTIVE=staging \
-    JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError"
 
 # 1. Point the variable to the safe /app path where 'spring' user can write files
 ENV KAFKA_SSL_TRUSTSTORE_PATH=/app/ca.pem
