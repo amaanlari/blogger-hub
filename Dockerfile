@@ -35,4 +35,4 @@ ENV KAFKA_SSL_TRUSTSTORE_PATH=/tmp/ca.pem
 
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "set -eu; printf '%s\\n' \"$KAFKA_CA_CERT\" > /tmp/ca.pem; test -s /tmp/ca.pem; exec java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["sh", "-c", "set -eu; printf '%s\\n' \"$KAFKA_CA_CERT\" > /tmp/ca.pem; echo \"CA size: $(wc -c < /tmp/ca.pem) bytes\"; echo \"CA header: $(head -n 1 /tmp/ca.pem)\"; echo \"CA footer: $(tail -n 1 /tmp/ca.pem)\"; exec java $JAVA_OPTS -jar /app/app.jar"]
