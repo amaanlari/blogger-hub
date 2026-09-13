@@ -17,6 +17,7 @@ notifications, Redis-backed OTP storage, MongoDB persistence, and a single-artif
   <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white">
   <img alt="Cloudinary" src="https://img.shields.io/badge/Cloudinary-media-3448C5?logo=cloudinary&logoColor=white">
   <img alt="Docker" src="https://img.shields.io/badge/Docker-multi--stage-2496ED?logo=docker&logoColor=white">
+  <img alt="MIT License" src="https://img.shields.io/badge/License-MIT-blue">
 </p>
 
 ---
@@ -37,15 +38,28 @@ blueprint.
 
 ### Screenshots
 
-> **TODO — no screenshots exist in the repo yet.** Suggested captures, one per implemented flow:
->
-> | File | What to capture |
-> | --- | --- |
-> | `docs/media/feed.png` | Home feed / `Latest` list |
-> | `docs/media/post.png` | Post page with rendered markdown, like button, threaded comments |
-> | `docs/media/editor.png` | Markdown editor with live preview and image upload |
-> | `docs/media/notifications.png` | Notifications page with unread filter |
-> | `docs/media/signup-otp.gif` | Signup → OTP email → verify → login |
+**Feed** — public, paginated, newest-first, with search in the header.
+
+![Home feed](docs/media/feed.png)
+
+**Post** — rendered markdown with author byline, reading time, owner-only edit/delete, like button
+and the responses thread.
+
+![Post page](docs/media/post.png)
+
+**Editor** — split markdown editor with live preview, a banner image field and inline image
+insertion, both uploading to Cloudinary.
+
+![Markdown editor](docs/media/editor.png)
+
+**Notifications** — like and comment events delivered through Kafka, with an unread-only filter,
+per-row mark-read/delete and an unread badge in the header.
+
+![Notifications](docs/media/notifications.png)
+
+**Email verification** — the six-digit OTP held in Redis under a TTL.
+
+![OTP verification](docs/media/otp-verification.png)
 
 ---
 
@@ -179,94 +193,75 @@ Active development, roughly in priority order.
 
 ## Architecture
 
+One Spring Boot application serves the API and the compiled React SPA from a single JAR. MongoDB is
+the primary store, Redis holds expiring OTP codes, and notification work is pushed onto a Kafka
+topic so it never runs inside a user's request.
+
 ```mermaid
 flowchart LR
-    subgraph Client
-        R["React 18 SPA<br/>Vite · TanStack Query · Zustand"]
+    R["React SPA"]
+
+    subgraph JAR["Spring Boot — single JAR"]
+        S["REST API<br/>+ static SPA"]
+        C["Kafka consumer"]
     end
 
-    subgraph JAR["Single executable JAR"]
-        S["Spring Boot 3.3 monolith<br/>REST API + static SPA"]
-    end
+    M[("MongoDB")]
+    RD[("Redis")]
+    K{{"Kafka<br/>notifications topic"}}
+    CL["Cloudinary"]
+    MAIL["Email"]
 
-    subgraph Data["Stateful backing services"]
-        M[("MongoDB<br/>users · posts · comments<br/>likes · notifications · refresh tokens")]
-        RD[("Redis<br/>OTP codes with TTL")]
-    end
-
-    subgraph Async["Async pipeline"]
-        K{{"Kafka topic<br/>blogger-hub-notifications"}}
-        C["@KafkaListener consumer<br/>(in-process, concurrency 3)"]
-    end
-
-    CL["Cloudinary<br/>images"]
-    MAIL["SMTP / Gmail API<br/>OTP + notification email"]
-
-    R -->|"HTTPS /api/**"| S
-    S -->|"serves index.html + assets"| R
+    R <-->|"/api/**"| S
     S <--> M
-    S <--> RD
-    S -->|"like · comment · reply events"| K
+    S <-->|"OTP codes"| RD
+    S -->|"like · comment · reply"| K
     K --> C
-    C -->|"persist notification"| M
-    C -->|"notify"| MAIL
-    S -->|"multipart upload"| CL
-    S --> MAIL
+    C -->|"persist"| M
+    C --> MAIL
+    S -->|"uploads"| CL
+    S -->|"OTP"| MAIL
 ```
 
-### Why MongoDB
+### MongoDB as the primary store
 
-Posts, comments and notifications are documents with genuinely different shapes, and they are almost
-always read as a whole rather than joined. A post carries an embedded `BlogUserRef` author snapshot;
-a notification carries denormalised actor username, avatar and target title so rendering the
-notification list needs no follow-up lookups at all. Modelling that relationally would mean either
-a join per row or the same denormalisation with extra migration ceremony. The schema also moved a
-lot during development — adding `emailNotificationsEnabled`, `isPremium`, notification target
-metadata — and a document store absorbed those changes without migrations. Indexes are declared on
-the documents themselves with `auto-index-creation: true`.
+Posts, comments and notifications are documents of genuinely different shapes, almost always read
+whole rather than joined. A post embeds a `BlogUserRef` author snapshot; a notification embeds the
+actor's username, avatar and the target's title, so rendering the notification list needs no
+follow-up lookups. The schema also moved a lot during development, and a document store absorbed
+those changes without migrations. Indexes are declared on the documents themselves
+(`auto-index-creation: true`).
 
-### Why Redis
+### Redis for expiring state
 
-OTP codes are the one piece of state in this system that *should* disappear on its own. Redis gives
-expiry as a first-class property of the key, so a code that is never used simply stops existing —
-no TTL column, no sweeper job, no chance of a stale code lingering in the users collection. It also
-keeps a high-churn, write-once-read-once workload off the primary datastore. Beyond OTPs, Redis is
-deliberately not yet used as a cache; that is on the roadmap rather than in the code.
+OTP codes are the one piece of state here that *should* delete itself. Redis makes expiry a
+property of the key, so an unused code simply stops existing — no TTL column, no sweeper job, no
+stale code lingering in the users collection. It also keeps a high-churn, write-once-read-once
+workload off the primary datastore. Redis is not used as a cache today; that is on the roadmap.
 
-### Why Kafka
+### Kafka for notification fan-out
 
-Every notification trigger sits on a user's critical path — a like or a comment should return as
-soon as it is written, not after a notification document is inserted and an email is handed to an
-SMTP server. Publishing an event decouples those: the write path does one produce call and returns,
-and the consumer does the slow work. Keying events by recipient ID means all notifications for one
-user land on one partition and are processed in order, while three consumer threads process
-different users concurrently. The topic is also a durable log — if the consumer is down or throws,
-events are retained (7 days locally) and replayed from the committed offset rather than lost, which
-an in-process `@Async` executor cannot offer. And it is the natural seam to cut along the day the
-notification worker needs to be its own deployable.
+A like or a comment should return as soon as it is written, not after a notification document is
+inserted and an email is handed to an SMTP server. Publishing an event decouples the two: the write
+path produces once and returns, and the consumer does the slow work. Events are keyed by recipient,
+so one user's notifications land on one partition and stay ordered while three consumer threads
+work on different users. The topic is also a durable log — if the consumer throws or is down,
+events are retained and replayed from the committed offset instead of being lost, which an
+in-process `@Async` executor cannot offer.
 
-### Why a monolith (for now)
+### A single deployable
 
-There is one team, one release cadence, and one datastore. Splitting into services today would buy
-independent deployability that nothing needs and cost distributed transactions, cross-service auth,
-N deployment targets and N times the local-dev setup — for a product that comfortably fits on a
-512 MB Render instance. The monolith is already organised by feature (`service/auth`,
-`service/blogpost`, `service/notification`, `service/media`, `service/interactions`), each with its
-own controller, service and repository, so the seams exist even though the boundary is a package
-rather than a network hop. Packaging the SPA inside the same JAR is the same trade in the other
-direction: one artifact, one origin, and CORS stops being a problem at all.
+This is a monolith by choice, not as a staging post to microservices. One application, one
+datastore, one release — splitting it would buy independent deployability that nothing here needs
+and cost distributed transactions, cross-service auth, and several times the local-dev setup, for a
+product that fits comfortably on a 512 MB instance. Internally it is still organised by feature
+(`auth`, `blogpost`, `notification`, `media`, `interactions`), each with its own controller, service
+and repository, which is where the real maintainability comes from. Bundling the SPA into the same
+JAR is the same trade: one artifact, one origin, and CORS stops being a problem.
 
-### What would be extracted first, if this needed to scale
-
-| Extract | Why it goes first |
-| --- | --- |
-| **Notification worker** | Already event-driven and asynchronous — the Kafka topic is the interface. Moving the `@KafkaListener` into its own deployable is close to a copy-paste, and it lets fan-out scale on notification volume instead of on HTTP traffic. Consumer group semantics handle the rest. |
-| **Media service** | Uploads are the only requests that hold a thread for seconds and buffer multi-megabyte payloads. Isolating them stops a burst of image uploads from starving the API's thread pool, and makes it easy to move to presigned direct-to-Cloudinary uploads later. |
-| **Auth / identity service** | Signup, OTP, token issue and refresh have a clean, narrow contract and their own storage (refresh tokens + Redis). Splitting it gives a single place to add rate limiting, OAuth providers and MFA, and lets the API layer verify tokens without owning identity. |
-| **Read/feed service** | The feed is the highest-volume, purely read-only path and the only one where anonymous traffic dominates. It is the natural home for a Redis read-through cache and, eventually, a search engine — a search index is a poor fit inside a write-path service. |
-| **Email dispatcher** | Fanned out of the notification worker if delivery ever needs its own retry policy, bounce handling, and provider failover. |
-
-The API monolith would remain as the write path and the composition layer.
+Scale, if it is ever needed, comes from running more instances of this one application behind a load
+balancer — the app is stateless, sessions live in JWTs, and Kafka consumer groups split the
+notification workload across instances automatically.
 
 ---
 
@@ -488,12 +483,14 @@ blogger-hub/
 ├── docs/
 │   ├── API_CONTRACT.md        # source of truth for API integration
 │   ├── FRONTEND.md            # frontend architecture and dev setup
-│   └── RENDER_DEPLOYMENT.md
+│   ├── RENDER_DEPLOYMENT.md
+│   └── media/                 # README screenshots
 ├── docker-compose.yaml        # Mongo · Redis · Kafka (KRaft) · topic bootstrap · app
 ├── Dockerfile                 # multi-stage: JDK build → JRE runtime
 ├── render.yaml                # Render blueprint
 ├── run-local.sh               # one-command local stack
-└── pom.xml                    # backend + frontend build
+├── pom.xml                    # backend + frontend build
+└── LICENSE                    # MIT
 ```
 
 ---
@@ -525,11 +522,7 @@ Issues and pull requests are welcome.
 
 ## License
 
-> **TODO — confirm.** No `LICENSE` file is committed and `pom.xml` declares no license, so the
-> project is currently "all rights reserved" by default. If MIT is intended, add a `LICENSE` file
-> and replace this block with:
->
-> `Released under the [MIT License](LICENSE).`
+Released under the [MIT License](LICENSE).
 
 ---
 
