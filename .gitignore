@@ -47,3 +47,5 @@ frontend/node/
 src/main/resources/static/*
 !src/main/resources/static/.gitkeep
 /src/main/resources/certs/*
+/src/main/resources/application-*.yaml
+/src/main/resources/credentials.json
